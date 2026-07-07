@@ -1,0 +1,75 @@
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  /* light mode (default) — Hollow Knight palette, reversed (light bg / dark text) */
+  --color-void: #e2e8f0;
+  --color-ash: #f1f5f9;
+  --color-iron: #cbd5e1;
+  --color-bone: #0a0e17;
+  --color-smoke: #334155;
+  --color-dust: #64748b;
+  --color-accent: #0d498b;
+  --color-accent-dim: rgba(13, 73, 139, 0.09);
+  --color-link: #2d5a27;
+  --color-link-dim: rgba(45, 90, 39, 0.09);
+  --color-line: #000000;
+
+  --font-display: 'Oswald', sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+
+  --animate-pulse-slow: pulse-slow 4s ease-in-out infinite;
+}
+
+/* dark mode overrides, toggled via .dark on <html> — Hollow Knight palette */
+.dark {
+  --color-void: #0a0e17;
+  --color-ash: #10151f;
+  --color-iron: #1c2330;
+  --color-bone: #e2e8f0;
+  --color-smoke: #a7b2c2;
+  --color-dust: #64707f;
+  --color-accent: #0d498b;
+  --color-accent-dim: rgba(13, 73, 139, 0.18);
+  --color-link: #2d5a27;
+  --color-link-dim: rgba(45, 90, 39, 0.18);
+  --color-line: #ffffff;
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--color-void);
+  color: var(--color-smoke);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+::selection {
+  background: var(--color-accent-dim);
+  color: var(--color-bone);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-void);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-iron);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-dust);
+}
+
