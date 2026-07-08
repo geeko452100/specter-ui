@@ -25,6 +25,13 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      # resume.txt is gitignored (real name/contact info) — the export step
+      # (crawler/matcher.py) needs it on disk to score postings, so write it
+      # from a secret rather than committing it.
+      - run: echo "$RESUME_TEXT" > profile/resume.txt
+        env:
+          RESUME_TEXT: ${{ secrets.RESUME_TEXT }}
+
       - run: python -m crawler.run
         env:
           CRAWLER_CONTACT_EMAIL: ${{ secrets.CRAWLER_CONTACT_EMAIL }}
