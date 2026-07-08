@@ -24,7 +24,12 @@
     "CONTACT_TO_ADDRESS": "ggriffith288@gmail.com",
     // specterui.dev is verified in Resend, so we send from our own domain
     // rather than the onboarding@resend.dev sandbox address.
-    "CONTACT_FROM_ADDRESS": "contact@specterui.dev"
+    "CONTACT_FROM_ADDRESS": "contact@specterui.dev",
+    // The frontend's two live hostnames — see index.ts for how this is
+    // split/applied. Without this, CORS is off and cross-origin browser
+    // requests from the frontend (Contact form, guest resume upload) fail
+    // with a NetworkError even though the API itself works fine.
+    "CORS_ORIGIN": "https://specterui.dev,https://www.specterui.dev"
   },
   // Single hostname for everything — the frontend's VITE_API_BASE_URL
   // points here for both /guest/match (job dashboard) and /contact.

@@ -18,9 +18,11 @@ const app = new Hono<{ Bindings: Bindings }>();
 // CORS is opt-in per-request (reads the binding at request time, not
 // module load time) since Workers don't have a single "startup" moment to
 // configure this once — unset CORS_ORIGIN just means no CORS headers.
+// Comma-separated so both specterui.dev and www.specterui.dev can be listed.
 app.use("*", async (c, next) => {
   if (c.env.CORS_ORIGIN) {
-    return cors({ origin: c.env.CORS_ORIGIN })(c, next);
+    const origins = c.env.CORS_ORIGIN.split(",").map((o) => o.trim());
+    return cors({ origin: origins })(c, next);
   }
   await next();
 });
