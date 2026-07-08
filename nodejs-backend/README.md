@@ -1,3 +1,0 @@
-# nodejs-backend
-
-Coming soon.

@@ -230,26 +230,66 @@ are a safety net, not a substitute for that judgment call.
 
 ---
 
-## 3. `nodejs-backend` — recruiter interview booking
+## 3. `nodejs-backend` — job board API and recruiter interview booking
 
-*Status: architecture defined, implementation in progress.*
+A TypeScript backend with two responsibilities, built at different times:
+serving the private job board's data (implemented), and eventually sitting
+between recruiters and my calendar via Calendly (still just a design).
 
-A small TypeScript backend that sits between recruiters and my calendar,
-built around the Calendly API rather than a bespoke scheduling UI.
+### Job board API — *implemented*
+
+**Stack:** Node.js, TypeScript, Express 5.
+
+Reads the `data/postings.json` file `python-crawler` exports (see
+`python-crawler`'s "Feeding `nodejs-backend`" section above) and serves it
+over a small authenticated API — the actual "board" a human looks at is a
+later piece of work; this is the data layer underneath it.
+
+**Decisions worth calling out:**
+
+- **A shared bearer token, not a full auth system.** This API has exactly
+  one consumer — me — so session management, password hashing, or OAuth
+  would all be solving a problem that doesn't exist here. `API_TOKEN` is
+  checked with a constant-time comparison
+  (`src/middleware/auth.ts`) to avoid leaking timing information about a
+  near-miss token, and the server refuses to start without one set — same
+  fail-fast policy `python-crawler` uses for its contact email.
+- **Reads the export file, not Postgres directly.** Matches the contract
+  `python-crawler` was built to hand off: no shared database credentials or
+  driver dependency between the Python and Node halves of this repo. The
+  file is re-read only when its mtime changes (`src/lib/postingsStore.ts`),
+  so most requests hit an in-memory cache instead of re-parsing a
+  multi-megabyte JSON file.
+- **A 503, not a crash, when the crawler hasn't run yet.** If
+  `data/postings.json` doesn't exist, `GET /api/postings` returns a `503`
+  with a message telling you to run the pipeline — this backend has no
+  opinion on when the crawler runs and shouldn't fall over because of it.
+- **Express 5 over 4** specifically so async route handlers that throw are
+  forwarded to the error middleware automatically — no `try/catch`
+  boilerplate wrapping every handler.
+
+```bash
+cd nodejs-backend
+npm install
+cp .env.example .env   # set API_TOKEN (generate a long random value)
+npm run dev             # tsx watch, ts source directly
+npm run build && npm start   # compiled build
+
+curl -H "Authorization: Bearer $API_TOKEN" \
+  "http://localhost:4000/api/postings?remote=true&company=stripe"
+```
+
+### Recruiter interview booking — *planned*
 
 **Why not just embed a Calendly widget and call it done:** the widget alone
 gets you a booking link, but nothing ties that booking back into anything
 else — no server-side record, no custom confirmation flow, no place to add
 logic later (e.g. pre-screening questions, routing by role, notifying me
-somewhere other than email). The backend exists to own that logic instead of
+somewhere other than email). This piece exists to own that logic instead of
 letting it live entirely inside a third-party iframe.
 
 **Planned architecture:**
 
-- **Node.js + TypeScript**, framework TBD between Express and Fastify —
-  either is overkill for the route count involved, but both give typed
-  request/response handling and a webhook signature-verification story that
-  a bare `http` server would mean reimplementing.
 - **Calendly as the source of truth for availability** — this backend does
   not model calendar state itself; it consumes Calendly's webhooks
   (`invitee.created`, `invitee.canceled`) and reacts to them, which avoids
@@ -258,15 +298,9 @@ letting it live entirely inside a third-party iframe.
   Verification uses Calendly's webhook signing secret; persistence is
   minimal (who booked, when, for what) since Calendly already holds the
   authoritative event data.
-- **Deployed independently** from the frontend and crawler, since it's the
-  only one of the three that needs to be reachable by an external service
-  (Calendly's webhook delivery) rather than just by me or by site visitors.
-
-```bash
-cd nodejs-backend
-npm install
-npm run dev     # once implemented
-```
+- **Reachable from the public internet**, unlike the job-board API above —
+  it's the only piece of `nodejs-backend` that needs to be, since Calendly's
+  webhook delivery has to reach it.
 
 ---
 
