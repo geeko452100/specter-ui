@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "specter-job-board-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-01",
+  // Needed for node:crypto (constant-time token comparison in
+  // middleware/auth.ts). No filesystem access either way — R2 is storage.
+  "compatibility_flags": ["nodejs_compat"],
+  "r2_buckets": [
+    {
+      "binding": "POSTINGS_BUCKET",
+      "bucket_name": "specter-job-postings"
+    }
+  ]
+  // API_TOKEN is a secret, not a var — set with:
+  //   wrangler secret put API_TOKEN
+  // Custom domain (api.specterui.dev) is easiest to attach from the
+  // dashboard (Workers & Pages -> this worker -> Settings -> Domains &
+  // Routes) after the first `wrangler deploy`, or add a "routes" block
+  // here once the zone is confirmed.
+}

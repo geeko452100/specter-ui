@@ -9,6 +9,7 @@ from . import config
 from .export import export_json
 from .http_client import PoliteHTTPClient
 from .pipeline import run_pipeline
+from .r2_upload import upload_postings
 from .storage import Storage
 
 logger = logging.getLogger(__name__)
@@ -46,6 +47,8 @@ def main() -> None:
 
     exported = export_json(config.DATABASE_URL, config.EXPORT_JSON_PATH)
     logger.info("Exported %d postings to %s", exported, config.EXPORT_JSON_PATH)
+
+    upload_postings(config.EXPORT_JSON_PATH)
 
 
 if __name__ == "__main__":

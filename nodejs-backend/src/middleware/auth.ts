@@ -1,30 +1,31 @@
 import { timingSafeEqual } from "node:crypto";
-import type { NextFunction, Request, Response } from "express";
-import { config } from "../config.js";
+import type { MiddlewareHandler } from "hono";
+
+type Bindings = { API_TOKEN: string };
 
 /**
- * Bearer-token check for the private board. Uses a length-blinded
- * constant-time comparison so a mismatched token doesn't leak timing
- * information about how many leading bytes matched.
+ * Bearer-token check for the private board — this API has exactly one
+ * consumer (me), so a full auth system would be solving a problem that
+ * doesn't exist here. Uses a length-blinded constant-time comparison so a
+ * mismatched token doesn't leak timing information about how many leading
+ * bytes matched. Requires the `nodejs_compat` flag (see wrangler.jsonc) for
+ * node:crypto.
  */
-export function requireAuth(req: Request, res: Response, next: NextFunction): void {
-  const [scheme, token] = (req.header("authorization") ?? "").split(" ");
+export const requireAuth: MiddlewareHandler<{ Bindings: Bindings }> = async (c, next) => {
+  const [scheme, token] = (c.req.header("authorization") ?? "").split(" ");
 
-  if (scheme !== "Bearer" || !token || !safeEqual(token, config.apiToken)) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
+  if (scheme !== "Bearer" || !token || !safeEqual(token, c.env.API_TOKEN)) {
+    return c.json({ error: "Unauthorized" }, 401);
   }
 
-  next();
-}
+  await next();
+};
 
 function safeEqual(provided: string, expected: string): boolean {
   const providedBuf = Buffer.from(provided);
   const expectedBuf = Buffer.from(expected);
 
   if (providedBuf.length !== expectedBuf.length) {
-    // Compare against itself so the response time doesn't depend on how
-    // the provided token's length differs from the real one.
     timingSafeEqual(providedBuf, providedBuf);
     return false;
   }

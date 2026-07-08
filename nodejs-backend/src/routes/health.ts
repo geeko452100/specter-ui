@@ -1,9 +1,7 @@
-import { Router } from "express";
+import { Hono } from "hono";
 
-export const healthRouter = Router();
+export const healthRoute = new Hono();
 
-// Deliberately unauthenticated — just confirms the process is up, not that
+// Deliberately unauthenticated — just confirms the Worker is up, not that
 // the postings data is loaded (see GET /api/postings for that).
-healthRouter.get("/health", (_req, res) => {
-  res.json({ status: "ok" });
-});
+healthRoute.get("/health", (c) => c.json({ status: "ok" }));

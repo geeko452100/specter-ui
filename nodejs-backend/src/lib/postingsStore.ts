@@ -1,41 +1,23 @@
-import { readFile, stat } from "node:fs/promises";
 import type { JobPosting } from "../types.js";
 
 export class PostingsNotFoundError extends Error {
-  constructor(path: string) {
+  constructor() {
     super(
-      `No postings export found at ${path}. Run the python-crawler ` +
-        "pipeline first (python -m crawler.run) to generate it.",
+      "No postings export found in R2 (key: postings.json). Run the " +
+        "python-crawler pipeline first — it uploads this after every real run.",
     );
     this.name = "PostingsNotFoundError";
   }
 }
 
-let cache: { mtimeMs: number; postings: JobPosting[] } | null = null;
-
-/**
- * Reads data/postings.json, re-parsing only when the file's mtime has
- * changed since the last read — python-crawler runs periodically, not
- * continuously, so most requests hit the in-memory cache instead of
- * re-parsing a multi-megabyte JSON file.
- */
-export async function getPostings(jsonPath: string): Promise<JobPosting[]> {
-  let mtimeMs: number;
-  try {
-    mtimeMs = (await stat(jsonPath)).mtimeMs;
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === "ENOENT") {
-      throw new PostingsNotFoundError(jsonPath);
-    }
-    throw err;
+// No in-memory caching here, unlike the old file-backed version of this
+// store: Workers don't guarantee an isolate (and its module state) survives
+// between requests, so a cache would be unreliable and R2 reads are already
+// fast — not worth the complexity for a low-traffic personal API.
+export async function getPostings(bucket: R2Bucket): Promise<JobPosting[]> {
+  const object = await bucket.get("postings.json");
+  if (!object) {
+    throw new PostingsNotFoundError();
   }
-
-  if (cache && cache.mtimeMs === mtimeMs) {
-    return cache.postings;
-  }
-
-  const raw = await readFile(jsonPath, "utf-8");
-  const postings = JSON.parse(raw) as JobPosting[];
-  cache = { mtimeMs, postings };
-  return postings;
+  return object.json<JobPosting[]>();
 }

@@ -1,0 +1,7 @@
+# Copy to .dev.vars for local `wrangler dev` (gitignored, never committed).
+# In production this is set with: wrangler secret put API_TOKEN
+# Generate a value with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+API_TOKEN=
+
+# Optional — leave unset unless a frontend needs to call this API cross-origin.
+CORS_ORIGIN=

@@ -1,7 +1,7 @@
 /**
- * Mirrors the JSON shape crawler/export.py in python-crawler writes to
- * data/postings.json. Keep this in sync with JobPosting/export.py's
- * COLUMNS if that schema ever changes.
+ * Mirrors the JSON shape crawler/export.py in python-crawler writes and
+ * uploads to R2 as postings.json. Keep this in sync with JobPosting/
+ * export.py's COLUMNS if that schema ever changes.
  */
 export interface JobPosting {
   source: string;

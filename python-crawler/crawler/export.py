@@ -1,14 +1,15 @@
 """
-Exports the postings table to a single JSON file — the hand-off point for
-nodejs-backend (not built yet) to eventually read from. JSON was chosen over
-letting another service query Postgres directly: it keeps the two services
-decoupled (no shared credentials/driver dependency across languages), and
-the write below is atomic, so a reader never observes a half-written file
-mid-export.
+Exports the postings table to a local JSON file, written atomically (temp
+file + rename) so a reader never observes a half-written file mid-export.
+This is the first half of the hand-off to nodejs-backend — see
+crawler/r2_upload.py for the second half (uploading this file to R2, which
+is what nodejs-backend, a Cloudflare Worker with no filesystem, actually
+reads from).
 
 Usage: `python -m crawler.export` re-exports from the existing database
-without re-running the pipeline. `crawler.run` calls `export_json`
-automatically after every real (non-dry-run) run.
+without re-running the pipeline (local file only, no R2 upload).
+`crawler.run` calls both `export_json` and `upload_postings` automatically
+after every real (non-dry-run) run.
 """
 
 from __future__ import annotations

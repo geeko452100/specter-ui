@@ -24,21 +24,27 @@ specter-ui/
 ## Architecture
 
 ```
-                     ┌────────────────────┐        ┌────────────────────┐
-   job postings ───▶ │   python-crawler    │──────▶ │    nodejs-backend    │
-   (target boards)   │  scrape → clean →   │  JSON  │  serves postings.json│──▶ me only
-                      │  dedupe → store     │  file  │  behind a bearer    │  (auth-gated)
-                      └────────────────────┘        │  token              │
-                                                       └────────────────────┘
+  python-crawler  (GitHub Actions, every 6h)
+       │
+       ├──write──▶ Neon (Postgres)
+       │
+       └──upload─▶ R2: postings.json  (Cloudflare object storage)
+                        │
+                        │ read
+                        ▼
+                   nodejs-backend  (Cloudflare Worker, bearer-token auth)
+                        │
+                        ▼
+                     me only  (auth-gated)
 
-   visitors     ───▶ ┌────────────────────┐
-                      │   react-frontend    │  — the only piece anyone
-                      │  portfolio + case   │    else on the internet sees
-                      │  study, public       │
-                      └────────────────────┘
+  visitors ────────▶ react-frontend  (Cloudflare Pages)
+                      — the only piece anyone else on the internet sees
 ```
 
-Each service is independently deployable and owns its own data. The frontend
+No servers to manage: the crawler runs on GitHub's infrastructure on a
+schedule, the API runs on Cloudflare's edge, storage is a managed database
+(Neon) and object store (R2), and the frontend is a static Pages deploy.
+Each piece is independently deployable and owns its own data — the frontend
 never talks to the crawler's storage directly — the only thing these three
 have in common is that they were built to make one person's job search less
 manual.
@@ -162,15 +168,25 @@ sources (fetch)  →  normalize (per-adapter)  →  dedupe + store (Postgres)  �
 
 ### Feeding `nodejs-backend`
 
-Every real (non-dry-run) run ends by exporting the full `postings` table to
-**`data/postings.json`** as a JSON array, written atomically (temp file +
-rename) so `nodejs-backend` never observes a half-written file mid-export.
+Every real (non-dry-run) run exports the full `postings` table to
+**`data/postings.json`** locally (atomic write — temp file + rename), then
+uploads that same file to a **Cloudflare R2** bucket (`crawler/r2_upload.py`)
+under the key `postings.json`. The R2 upload is the part that actually
+matters in production: `nodejs-backend` runs as a Cloudflare Worker with no
+filesystem of its own, and the crawler itself runs on a GitHub Actions
+runner that's destroyed after every run — R2 is the only thing both sides
+can reach. The local file write still happens too, mainly so local
+dev/testing works without needing R2 credentials at all (see
+`crawler/r2_upload.py`'s module docstring — the upload step no-ops cleanly
+if `R2_ACCOUNT_ID`/`R2_ACCESS_KEY_ID`/`R2_SECRET_ACCESS_KEY`/
+`R2_BUCKET_NAME` aren't all set).
 
-JSON was chosen over having Node query Neon directly: it keeps the two
-services decoupled, with no shared database credentials or driver
-dependency across the Python/Node boundary. Node just reads a file.
+R2 over having Node query Neon directly: it keeps the two services
+decoupled, with no shared database credentials or driver dependency across
+the Python/Node boundary, and R2 has no egress fees when read from a
+Cloudflare Worker in the same account.
 
-Each element in `data/postings.json` has this shape:
+Each element in the exported JSON has this shape:
 
 ```json
 {
@@ -189,25 +205,28 @@ Each element in `data/postings.json` has this shape:
 }
 ```
 
-`data/` is gitignored — this file is private output, not committed. Re-run
-the export without re-running the whole pipeline with
-`python -m crawler.export`.
+`data/` is gitignored — the local copy is private output, not committed.
+Re-run the export/upload without re-running the whole pipeline with
+`python -m crawler.export` (local file only) — there's no standalone R2
+re-upload command; run the crawler for that.
 
 ### Setup and usage
 
 Storage is [Neon](https://neon.tech) (managed serverless Postgres) — no
 database to run or back up yourself. Create a project in the Neon console,
-copy its connection string, and set it as `DATABASE_URL`:
+copy its connection string, and set it as `DATABASE_URL`. R2 credentials
+(also optional for local dev, see above) come from the Cloudflare dashboard
+under R2 → Manage R2 API Tokens:
 
 ```bash
 cd python-crawler
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env              # set CRAWLER_CONTACT_EMAIL and DATABASE_URL
-                                   # (from the Neon console)
+cp .env.example .env   # set CRAWLER_CONTACT_EMAIL, DATABASE_URL, and
+                        # (optionally, for local R2 testing) the R2_* vars
 
 python -m crawler.run --dry-run --verbose   # fetch + log, no writes
-python -m crawler.run                       # upserts into Neon, exports JSON
+python -m crawler.run                       # upserts into Neon, exports + uploads
 ```
 
 ### Adding a source
@@ -226,55 +245,60 @@ are a safety net, not a substitute for that judgment call.
 
 ## 3. `nodejs-backend` — private job board API
 
-**Stack:** Node.js, TypeScript, Express 5.
+**Stack:** TypeScript, [Hono](https://hono.dev), deployed as a Cloudflare
+Worker.
 
-Reads the `data/postings.json` file `python-crawler` exports (see
-`python-crawler`'s "Feeding `nodejs-backend`" section above) and serves it
-over a small authenticated API — the actual "board" a human looks at is a
-later piece of work; this is the data layer underneath it.
+Reads `postings.json` from a Cloudflare R2 bucket (`python-crawler` uploads
+it there — see `python-crawler`'s "Feeding `nodejs-backend`" section above)
+and serves it over a small authenticated API — the actual "board" a human
+looks at is a later piece of work; this is the data layer underneath it.
 
 **Decisions worth calling out:**
 
+- **Hono, not Express.** A Worker has no Node `http.Server` — it's a
+  `fetch(request) -> response` function running on V8 isolates, not a
+  process listening on a socket. Hono is built for exactly that model
+  (Express *can* run under Workers' `nodejs_compat` flag, but that's
+  compatibility-shimming a Node-shaped framework onto a runtime that isn't
+  Node; Hono is the tool actually designed for it).
+- **R2, not a local file.** The Worker has no filesystem at all, so the
+  file-based hand-off `python-crawler` writes locally has to land somewhere
+  network-reachable — R2 is that place. No in-memory caching of the read,
+  unlike an earlier version of this service: Workers don't guarantee an
+  isolate survives between requests, so a cache would be unreliable, and R2
+  reads are already fast enough that it isn't worth the complexity.
 - **A shared bearer token, not a full auth system.** This API has exactly
   one consumer — me — so session management, password hashing, or OAuth
   would all be solving a problem that doesn't exist here. `API_TOKEN` is
-  checked with a constant-time comparison
-  (`src/middleware/auth.ts`) to avoid leaking timing information about a
-  near-miss token, and the server refuses to start without one set — same
-  fail-fast policy `python-crawler` uses for its contact email.
-- **Reads the export file, not Postgres directly.** Matches the contract
-  `python-crawler` was built to hand off: no shared database credentials or
-  driver dependency between the Python and Node halves of this repo. The
-  file is re-read only when its mtime changes (`src/lib/postingsStore.ts`),
-  so most requests hit an in-memory cache instead of re-parsing a
-  multi-megabyte JSON file.
-- **A 503, not a crash, when the crawler hasn't run yet.** If
-  `data/postings.json` doesn't exist, `GET /api/postings` returns a `503`
-  with a message telling you to run the pipeline — this backend has no
-  opinion on when the crawler runs and shouldn't fall over because of it.
-- **Express 5 over 4** specifically so async route handlers that throw are
-  forwarded to the error middleware automatically — no `try/catch`
-  boilerplate wrapping every handler.
+  checked with a constant-time comparison (`src/middleware/auth.ts`,
+  `node:crypto` via the `nodejs_compat` flag) to avoid leaking timing
+  information about a near-miss token.
+- **A 503, not a crash, when the crawler hasn't run yet.** If R2 has no
+  `postings.json`, `GET /api/postings` returns a `503` with a message
+  telling you to run the pipeline — this backend has no opinion on when the
+  crawler runs and shouldn't fall over because of it.
 
 ```bash
 cd nodejs-backend
 npm install
-cp .env.example .env   # set API_TOKEN (generate a long random value)
-npm run dev             # tsx watch, ts source directly
-npm run build && npm start   # compiled build
+cp .dev.vars.example .dev.vars   # set API_TOKEN (generate a long random value)
+npm run dev                       # wrangler dev, local R2 simulation
 
 curl -H "Authorization: Bearer $API_TOKEN" \
-  "http://localhost:4000/api/postings?remote=true&company=stripe"
+  "http://localhost:8787/api/postings?remote=true&company=stripe"
+
+npm run deploy   # wrangler deploy — then: wrangler secret put API_TOKEN
 ```
 
 ---
 
 ## Deployment
 
-`react-frontend` deploys to Cloudflare Pages. `python-crawler` and
-`nodejs-backend` deploy together to a single Ubuntu VM — they have to be
-co-located, since the JSON hand-off between them (`data/postings.json`) is a
-file on disk, not a network call.
+No servers anywhere: `react-frontend` deploys to Cloudflare Pages,
+`nodejs-backend` deploys to Cloudflare Workers, `python-crawler` runs on a
+GitHub Actions schedule, storage is Neon (Postgres) and Cloudflare R2
+(object storage). Nothing here needs a VM, a Dockerfile, or an uptime
+commitment from a machine you own.
 
 ### `react-frontend` → Cloudflare Pages
 
@@ -291,81 +315,63 @@ Pages doesn't do by default for a static build —
 build. Add the custom domain under the Pages project's **Custom domains**
 tab once the first deploy succeeds.
 
-### `python-crawler` + `nodejs-backend` → Ubuntu VM
-
-Prerequisites on the VM: Python 3.11+, Node.js 22+, git — no Docker needed,
-since storage is Neon (managed) rather than a self-hosted database. The
-paths below assume the repo lives at `/opt/specter-ui` — adjust the
-`WorkingDirectory`/`EnvironmentFile` paths in the `.service`/`.timer` files
-under each service's `deploy/` folder if you put it somewhere else.
+### `nodejs-backend` → Cloudflare Workers
 
 ```bash
-git clone <this-repo-url> /opt/specter-ui
-cd /opt/specter-ui
-```
-
-**python-crawler:**
-
-```bash
-cd python-crawler
-cp .env.example .env   # set CRAWLER_CONTACT_EMAIL and DATABASE_URL (Neon console)
-
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-.venv/bin/python -m crawler.run   # run once by hand to confirm it works
-
-sudo cp deploy/crawler.service deploy/crawler.timer /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now crawler.timer   # runs every 6 hours from here on
-```
-
-**nodejs-backend:**
-
-```bash
-cd ../nodejs-backend
-cp .env.example .env   # set API_TOKEN
+cd nodejs-backend
 npm install
-npm run build
 
-sudo cp deploy/nodejs-backend.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now nodejs-backend.service
+npx wrangler r2 bucket create specter-job-postings   # one-time, matches
+                                                       # wrangler.jsonc's
+                                                       # r2_buckets binding
+
+npx wrangler login          # one-time browser auth
+npx wrangler secret put API_TOKEN   # paste a long random value when prompted
+
+npm run deploy               # wrangler deploy
 ```
 
-**Exposing `nodejs-backend` via Cloudflare Tunnel** (no inbound port opened
-on the VM — `cloudflared` makes an outbound connection to Cloudflare, which
-routes a subdomain to it; reuses the same Cloudflare account as the Pages
-deploy above):
+Attach the custom domain (`api.specterui.dev`) from the dashboard: this
+Worker → **Settings** → **Domains & Routes** → **Add** — reuses the same
+Cloudflare account/zone as the Pages deploy above, no separate DNS provider
+or TLS setup needed.
+
+### `python-crawler` → GitHub Actions
+
+[`.github/workflows/crawler.yml`](.github/workflows/crawler.yml) runs the
+pipeline on a cron schedule (every 6 hours) and on manual dispatch from the
+Actions tab. Set these as **repository secrets** (Settings → Secrets and
+variables → Actions):
+
+- `CRAWLER_CONTACT_EMAIL`
+- `DATABASE_URL` — from the Neon console
+- `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`,
+  `R2_BUCKET_NAME` — create an API token under Cloudflare dashboard → R2 →
+  Manage R2 API Tokens; `R2_BUCKET_NAME` is `specter-job-postings`, matching
+  the bucket created above
+
+Once the secrets are set, trigger a run by hand from the Actions tab
+(**Run job crawler** → **Run workflow**) to confirm it works end-to-end
+before waiting for the first scheduled run.
+
+### Verifying it's all connected
 
 ```bash
-# install cloudflared (see Cloudflare's docs for the current apt repo setup), then:
-cloudflared tunnel login
-cloudflared tunnel create specter-backend
-cloudflared tunnel route dns specter-backend api.specterui.dev
+curl https://api.specterui.dev/health
+# {"status":"ok"}
 
-sudo mkdir -p /etc/cloudflared
-sudo cp nodejs-backend/deploy/cloudflared-config.example.yml /etc/cloudflared/config.yml
-# edit /etc/cloudflared/config.yml: fill in <TUNNEL_ID> in both places
-
-sudo cloudflared service install
-sudo systemctl enable --now cloudflared
+curl -H "Authorization: Bearer <your API_TOKEN>" \
+  https://api.specterui.dev/api/postings
+# 503 until the first GitHub Actions crawler run has uploaded to R2,
+# then the real postings list
 ```
-
-Verify from outside the VM: `curl https://api.specterui.dev/health` should
-return `{"status":"ok"}` with no port open on the VM's firewall at all.
-
-Redeploying after a code change, for either service: `git pull`, reinstall
-if dependencies changed, `npm run build` for `nodejs-backend`, then
-`sudo systemctl restart nodejs-backend` (or just wait for the next
-`crawler.timer` run — no restart needed for the crawler, it's not a
-long-running process).
 
 ---
 
 ## Case study: building this project
 
-This entire repo — frontend, this README, the architecture for the two
-services still in progress — was built through iterative pairing with
+This entire repo — frontend, crawler, API, deployment setup, this README —
+was built through iterative pairing with
 [Claude Code](https://claude.com/product/claude-code), Anthropic's CLI-based
 coding agent, rather than written top-down from a spec.
 
