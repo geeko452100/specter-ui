@@ -1,6 +1,6 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { Link, NavLink, Outlet } from 'react-router-dom'
 import ThemeToggle from './ThemeToggle'
-import { LogoIcon } from './icons'
+import { LockIcon, LogoIcon } from './icons'
 
 type NavLinkItem = {
   to: string
@@ -12,13 +12,14 @@ const links: NavLinkItem[] = [
   { to: '/', label: 'Home', end: true },
   { to: '/work', label: 'Work' },
   { to: '/about', label: 'About' },
+  { to: '/resume', label: 'Resume' },
   { to: '/contact', label: 'Contact' },
 ]
 
 function Layout() {
   return (
     <div className="relative flex min-h-screen flex-col font-body text-smoke">
-      <header className="relative z-10 border-b-[0.5px] border-line">
+      <header className="relative z-10 border-b-[0.5px] border-line print:hidden">
         <nav className="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
           <NavLink
             to="/"
@@ -63,10 +64,15 @@ function Layout() {
         <Outlet />
       </main>
 
-      <footer className="relative z-10 border-t-[0.5px] border-line">
+      <footer className="relative z-10 border-t-[0.5px] border-line print:hidden">
         <div className="mx-auto flex max-w-5xl flex-col items-center gap-2 px-6 py-8 text-center text-xs tracking-widest text-dust uppercase sm:flex-row sm:justify-between">
           <p>&copy; {new Date().getFullYear()} SpecterUI</p>
-          <p>gavingriffith212@gmail.com</p>
+          <div className="flex items-center gap-3">
+            <p>ggriffith288@gmail.com</p>
+            <Link to="/dashboard" aria-label="Dashboard" className="text-dust transition-colors hover:text-link">
+              <LockIcon className="h-3.5 w-3.5" />
+            </Link>
+          </div>
         </div>
       </footer>
     </div>

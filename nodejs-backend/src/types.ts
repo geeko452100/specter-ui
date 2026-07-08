@@ -16,4 +16,11 @@ export interface JobPosting {
   posted_at: string | null;
   first_seen_at: string;
   last_seen_at: string;
+  /** Cosine similarity (0-1) against profile/resume.txt — see
+   * python-crawler/crawler/matcher.py. postings.json is pre-sorted highest
+   * match first, so array order already reflects this. */
+  match_score: number;
+  /** Top overlapping resume/posting terms driving match_score, for
+   * explainability. */
+  match_terms: string[];
 }

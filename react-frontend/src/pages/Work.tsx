@@ -1,27 +1,27 @@
 const projects = [
   {
-    title: 'Music Player',
+    title: 'Full-Stack Music Streaming System',
     url: 'https://music.specterui.dev',
     year: '2026',
-    tags: ['React', 'TypeScript', 'YouTube IFrame API', 'YouTube Data API', 'Loading States'],
+    tags: ['React', 'TypeScript', 'FastAPI', 'Groq AI Chatbot', 'Docker'],
     blurb:
-      'Persistent iframe playback that keeps playing as you browse, live search via the YouTube Data API, and skeleton loading states throughout.',
+      'A music streaming platform with a FastAPI backend for async, high-throughput data processing and a Groq-powered AI chatbot (gpt-oss-20b) that gives real-time, natural-language playlist recommendations — Dockerized end to end.',
   },
   {
-    title: 'E-commerce App',
-    url: 'https://shop.specterui.dev',
+    title: 'RBAC Package Tracker with Ticket Management',
+    url: 'https://rbac.specterui.dev',
     year: '2026',
-    tags: ['React', 'useReducer', 'React Router', 'LocalStorage', 'Filtering', 'Supabase Auth', 'Stripe Payments'],
+    tags: ['Next.js Auth', 'PostgreSQL DB', 'Secure Cookies', 'RBAC Permissions', 'Ticket Portal'],
     blurb:
-      'A useReducer-driven cart, category filtering, Supabase-authenticated accounts, and Stripe checkout for tech-only products.',
+      'Role-based access control for package tracking and support ticketing — permission-gated data access and a dedicated admin view for managing roles in real time.',
   },
   {
-    title: 'Game storefront',
+    title: 'Job Dashboard',
     year: '2026',
-    url: 'https://arcade.specterui.dev',
-    tags: ['React Router', 'iframe Embedding', 'Supabase Auth', 'Stripe Payments', 'Leaderboard', 'Responsive CSS'],
+    url: 'https://www.specterui.dev/dashboard',
+    tags: ['Python Web Scraping', 'TF-IDF Matching', 'Cloudflare Workers API', 'React Dashboard', 'Resume Matching'],
     blurb:
-      'Iframe-embedded playable titles, a live leaderboard, Supabase accounts, and Stripe-gated purchases.',
+      'A full-stack job-search pipeline that crawls postings from multiple boards, ranks every one by fit against a resume using TF-IDF + cosine similarity, and serves results live — try it yourself by uploading your own resume.',
   },
 ]
 

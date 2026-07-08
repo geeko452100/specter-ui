@@ -53,6 +53,14 @@ if not DATABASE_URL:
 # from. Written atomically after every real run — see crawler/export.py.
 EXPORT_JSON_PATH = Path(__file__).resolve().parent.parent / "data" / "postings.json"
 
+# Resume/skills/portfolio text that every posting is scored against (TF-IDF
+# + cosine similarity — see crawler/matcher.py) at export time. Not checked
+# for existence here: dry runs and pipeline runs don't need it, only
+# crawler/export.py does, and it fails loudly there if this file is missing
+# or empty. Gitignored — profile/resume.example.txt is the committed
+# template.
+RESUME_PROFILE_PATH = Path(__file__).resolve().parent.parent / "profile" / "resume.txt"
+
 # Edit this list with the boards relevant to your own search. Each entry
 # below is a real, public example so the pipeline runs end-to-end out of
 # the box — swap in the companies/categories you actually care about.

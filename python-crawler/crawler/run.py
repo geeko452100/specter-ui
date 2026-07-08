@@ -45,7 +45,7 @@ def main() -> None:
     with Storage(config.DATABASE_URL) as storage:
         run_pipeline(config.SOURCES, client, storage)
 
-    exported = export_json(config.DATABASE_URL, config.EXPORT_JSON_PATH)
+    exported = export_json(config.DATABASE_URL, config.EXPORT_JSON_PATH, config.RESUME_PROFILE_PATH)
     logger.info("Exported %d postings to %s", exported, config.EXPORT_JSON_PATH)
 
     upload_postings(config.EXPORT_JSON_PATH)

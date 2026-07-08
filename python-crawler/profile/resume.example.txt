@@ -1,0 +1,21 @@
+Copy this file to resume.txt (gitignored — keeps your personal details out
+of the repo) and replace everything below with your own resume, skills, and
+portfolio text. Plain text or markdown both work fine; there's no required
+structure — crawler/matcher.py just runs TF-IDF over whatever's here, so
+write it the way you'd describe yourself to a recruiter: role titles you
+want to match, languages and frameworks, domains you've worked in, and the
+kind of projects you want more of.
+
+Example shape:
+
+Frontend / full-stack engineer. React, TypeScript, Node.js, Python.
+Experience building and deploying web applications on Cloudflare Workers
+and Pages. Comfortable with REST APIs, Postgres, CI/CD via GitHub Actions.
+Interested in remote roles at small-to-mid-size product companies.
+
+Skills: React, TypeScript, JavaScript, Python, Node.js, Hono, PostgreSQL,
+Tailwind CSS, Vite, REST APIs, Git, CI/CD, Cloudflare Workers.
+
+Projects: built and shipped a developer portfolio with a private job-search
+pipeline (crawler + API + dashboard); an e-commerce app with Stripe
+checkout and Supabase auth; a music player with persistent playback.

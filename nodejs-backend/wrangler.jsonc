@@ -11,11 +11,30 @@
       "binding": "POSTINGS_BUCKET",
       "bucket_name": "specter-job-postings"
     }
+  ],
+  // Rate-limits guest resume uploads per IP (see routes/guestMatch.ts) to
+  // blunt abuse of the public matching endpoint.
+  "kv_namespaces": [
+    {
+      "binding": "RATE_LIMIT",
+      "id": "ee8cde505e9b45f9a92bb98972bfb104"
+    }
+  ],
+  "vars": {
+    "CONTACT_TO_ADDRESS": "ggriffith288@gmail.com",
+    // specterui.dev is verified in Resend, so we send from our own domain
+    // rather than the onboarding@resend.dev sandbox address.
+    "CONTACT_FROM_ADDRESS": "contact@specterui.dev"
+  },
+  // Both hostnames point at this same Worker — it serves /api/postings
+  // (job dashboard) and /contact from one script either way.
+  "routes": [
+    { "pattern": "api.specterui.dev", "custom_domain": true },
+    { "pattern": "contact.specterui.dev", "custom_domain": true }
   ]
-  // API_TOKEN is a secret, not a var — set with:
+  // API_TOKEN and RESEND_API_KEY are secrets, not vars — set with:
   //   wrangler secret put API_TOKEN
-  // Custom domain (api.specterui.dev) is easiest to attach from the
-  // dashboard (Workers & Pages -> this worker -> Settings -> Domains &
-  // Routes) after the first `wrangler deploy`, or add a "routes" block
-  // here once the zone is confirmed.
+  //   wrangler secret put RESEND_API_KEY
+  // (Resend API key: create a free account at resend.com, then an API key
+  // under API Keys. Free tier is 3,000 emails/month.)
 }

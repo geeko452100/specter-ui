@@ -5,3 +5,10 @@ API_TOKEN=
 
 # Optional — leave unset unless a frontend needs to call this API cross-origin.
 CORS_ORIGIN=
+
+# Resend API key for POST /contact (free tier, resend.com/api-keys).
+# In production this is set with: wrangler secret put RESEND_API_KEY
+RESEND_API_KEY=
+
+# CONTACT_TO_ADDRESS and CONTACT_FROM_ADDRESS are non-secret and set as
+# "vars" in wrangler.jsonc, not here.

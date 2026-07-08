@@ -3,31 +3,31 @@ import { GithubIcon } from '../components/icons'
 
 const featured = [
   {
-    title: 'Music Player',
+    title: 'Full-Stack Music Streaming System',
     url: 'https://music.specterui.dev',
     year: '2026',
-    tags: ['React', 'TypeScript', 'REST API', 'Loading States'],
+    tags: ['React Frontend', 'FastAPI Backend', 'Groq AI Chatbot', 'Docker', 'Audio Streaming'],
     blurb:
-      'Persistent iframe playback that keeps playing as you browse, live search via the YouTube Data API, and skeleton loading states throughout.',
-    github: 'https://github.com/geeko452100/MusicPlayer'
+      'A music streaming platform with a FastAPI backend for async, high-throughput data processing and a Groq-powered AI chatbot (gpt-oss-20b) that gives real-time, natural-language playlist recommendations — Dockerized end to end.',
+    github: 'https://github.com/geeko452100/MusicGallery'
   },
   {
-    title: 'E-commerce App',
-    url: 'https://shop.specterui.dev',
+    title: 'RBAC Package Tracker with Ticket Management',
+    url: 'https://rbac.specterui.dev',
     year: '2026',
-    tags: ['React', 'useReducer', 'LocalStorage'],
+    tags: ['Next.js Auth', 'PostgreSQL DB', 'Secure Cookies', 'RBAC Permissions', 'Ticket Portal'],
     blurb:
-      'A useReducer-driven cart, category filtering, Supabase-authenticated accounts, and Stripe checkout for tech-only products.',
-    github: 'https://github.com/geeko452100/E-commerce'
+      'Role based package management system along with a customer support management system',
+    github: 'https://github.com/geeko452100/RBAC-PkgTracker'
   },
   {
-    title: 'Game storefront',
+    title: 'Job Dashboard',
     year: '2026',
-    url: 'https://arcade.specterui.dev',
-    tags: ['Typescript', 'React', 'State management', 'UI/UX Design', 'Local Storage'],
+    url: 'https://www.specterui.dev/dashboard',
+    tags: ['Python Web Scraping', 'TF-IDF Matching', 'Cloudflare Workers API', 'React Dashboard', 'Resume Matching'],
     blurb:
-      'Iframe-embedded playable titles, a live leaderboard, Supabase accounts, and Stripe-gated purchases.',
-    github:'https://github.com/geeko452100/GameHub'
+      'A full-stack job-search pipeline that crawls postings from multiple boards, ranks every one by fit against a resume using TF-IDF + cosine similarity, and serves results live — try it yourself by uploading your own resume.',
+    github:'https://github.com/geeko452100/specter-ui'
   },
 ]
 

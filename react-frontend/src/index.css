@@ -54,6 +54,19 @@ body {
   transition: background-color 0.25s ease, color 0.25s ease;
 }
 
+/* Must come after the unconditional `body` rule above — same specificity,
+   so source order decides the winner, and this needs to win when printing. */
+@media print {
+  @page {
+    size: letter;
+    margin: 0.55in;
+  }
+
+  body {
+    background: #ffffff;
+  }
+}
+
 ::selection {
   background: var(--color-accent-dim);
   color: var(--color-bone);

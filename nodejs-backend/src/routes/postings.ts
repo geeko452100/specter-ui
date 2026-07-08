@@ -6,7 +6,7 @@ type Bindings = { POSTINGS_BUCKET: R2Bucket };
 
 export const postingsRoute = new Hono<{ Bindings: Bindings }>();
 
-// GET /api/postings?remote=true&company=stripe&tag=react&source=greenhouse
+// GET /api/postings?remote=true&company=stripe&tag=react&source=greenhouse&min_score=0.2
 postingsRoute.get("/postings", async (c) => {
   let postings: JobPosting[];
   try {
@@ -39,6 +39,12 @@ postingsRoute.get("/postings", async (c) => {
   const source = c.req.query("source");
   if (source !== undefined) {
     postings = postings.filter((p) => p.source.startsWith(source));
+  }
+
+  const minScore = c.req.query("min_score");
+  if (minScore !== undefined) {
+    const threshold = Number(minScore);
+    postings = postings.filter((p) => p.match_score >= threshold);
   }
 
   return c.json({ count: postings.length, postings });

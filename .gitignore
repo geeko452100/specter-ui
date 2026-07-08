@@ -45,6 +45,10 @@ env/
 # Scraped/pipeline data (private job board output)
 python-crawler/data/
 
+# Personal resume/skills text used for match scoring (crawler/matcher.py) —
+# profile/resume.example.txt is the committed template
+python-crawler/profile/resume.txt
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

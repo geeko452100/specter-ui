@@ -3,7 +3,9 @@ import Layout from './components/Layout'
 import Home from './pages/Home'
 import Work from './pages/Work'
 import About from './pages/About'
+import Resume from './pages/Resume'
 import Contact from './pages/Contact'
+import Dashboard from './pages/Dashboard'
 import NotFound from './pages/NotFound'
 
 function App() {
@@ -13,7 +15,11 @@ function App() {
         <Route index element={<Home />} />
         <Route path="work" element={<Work />} />
         <Route path="about" element={<About />} />
+        <Route path="resume" element={<Resume />} />
         <Route path="contact" element={<Contact />} />
+        {/* Not in the main nav — only reachable via the footer lock icon or
+            directly at /dashboard. See nodejs-backend's bearer-token gate. */}
+        <Route path="dashboard" element={<Dashboard />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

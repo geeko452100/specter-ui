@@ -2,17 +2,54 @@ import { useState, type FormEvent } from 'react'
 import { GithubIcon, LinkedInIcon, MailIcon } from '../components/icons'
 
 const socials = [
-  { label: 'Email', href: 'mailto:gavingriffith212@gmail.com', Icon: MailIcon },
+  { label: 'Email', href: 'mailto:ggriffith288@gmail.com', Icon: MailIcon },
   { label: 'GitHub', href: 'https://github.com/geeko452100', Icon: GithubIcon },
   { label: 'LinkedIn', href: 'https://www.linkedin.com/in/gavin-griffith', Icon: LinkedInIcon },
 ]
 
-function Contact() {
-  const [sent, setSent] = useState(false)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string | undefined
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+type SubmitState = { status: 'idle' | 'sending' | 'sent' } | { status: 'error'; message: string }
+
+function Contact() {
+  const [submit, setSubmit] = useState<SubmitState>({ status: 'idle' })
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setSent(true)
+    if (!API_BASE_URL) {
+      setSubmit({ status: 'error', message: "Contact form isn't configured — email me directly instead." })
+      return
+    }
+
+    const form = event.currentTarget
+    const data = new FormData(form)
+    setSubmit({ status: 'sending' })
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.get('name'),
+          email: data.get('email'),
+          message: data.get('message'),
+          company_website: data.get('company_website'),
+        }),
+      })
+
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null
+        throw new Error(body?.error ?? `Request failed (${res.status}).`)
+      }
+
+      setSubmit({ status: 'sent' })
+      form.reset()
+    } catch (err) {
+      setSubmit({
+        status: 'error',
+        message: err instanceof Error ? err.message : 'Something went wrong sending that.',
+      })
+    }
   }
 
   return (
@@ -26,7 +63,7 @@ function Contact() {
         everything that comes through.
       </p>
 
-      {sent ? (
+      {submit.status === 'sent' ? (
         <div className="mt-10 rounded-sm border border-link/30 bg-link-dim p-8 text-center">
           <p className="font-display text-lg tracking-wide text-bone">Message received.</p>
           <p className="mt-2 text-sm text-dust">
@@ -41,6 +78,7 @@ function Contact() {
             </label>
             <input
               id="name"
+              name="name"
               type="text"
               required
               className="mt-2 w-full rounded-sm border border-iron bg-ash/60 px-4 py-3 text-bone outline-none transition-colors focus:border-accent/60"
@@ -53,6 +91,7 @@ function Contact() {
             </label>
             <input
               id="email"
+              name="email"
               type="email"
               required
               className="mt-2 w-full rounded-sm border border-iron bg-ash/60 px-4 py-3 text-bone outline-none transition-colors focus:border-accent/60"
@@ -65,17 +104,26 @@ function Contact() {
             </label>
             <textarea
               id="message"
+              name="message"
               required
               rows={5}
               className="mt-2 w-full rounded-sm border border-iron bg-ash/60 px-4 py-3 text-bone outline-none transition-colors focus:border-accent/60"
               placeholder="Tell me what's on your mind..."
             />
           </div>
+          <div className="hidden" aria-hidden="true">
+            <label htmlFor="company_website">Website</label>
+            <input id="company_website" name="company_website" type="text" tabIndex={-1} autoComplete="off" />
+          </div>
+          {submit.status === 'error' && (
+            <p className="text-sm text-red-400">{submit.message}</p>
+          )}
           <button
             type="submit"
-            className="rounded-sm border border-accent/40 bg-accent-dim px-6 py-3 text-sm tracking-widest text-bone uppercase transition-colors duration-300 hover:border-accent hover:bg-accent/20"
+            disabled={submit.status === 'sending'}
+            className="rounded-sm border border-accent/40 bg-accent-dim px-6 py-3 text-sm tracking-widest text-bone uppercase transition-colors duration-300 hover:border-accent hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Send
+            {submit.status === 'sending' ? 'Sending...' : 'Send'}
           </button>
         </form>
       )}
