@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import argparse
 import logging
-import tempfile
-from pathlib import Path
 
 from . import config
+from .export import export_json
 from .http_client import PoliteHTTPClient
 from .pipeline import run_pipeline
 from .storage import Storage
+
+logger = logging.getLogger(__name__)
 
 
 def main() -> None:
@@ -37,13 +38,14 @@ def main() -> None:
     )
 
     if args.dry_run:
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            with Storage(Path(tmp_dir) / "dry-run.db") as storage:
-                run_pipeline(config.SOURCES, client, storage)
+        run_pipeline(config.SOURCES, client, storage=None)
         return
 
-    with Storage(config.DB_PATH) as storage:
+    with Storage(config.DATABASE_URL) as storage:
         run_pipeline(config.SOURCES, client, storage)
+
+    exported = export_json(config.DATABASE_URL, config.EXPORT_JSON_PATH)
+    logger.info("Exported %d postings to %s", exported, config.EXPORT_JSON_PATH)
 
 
 if __name__ == "__main__":

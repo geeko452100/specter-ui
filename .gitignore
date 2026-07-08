@@ -38,8 +38,6 @@ env/
 
 # Scraped/pipeline data (private job board output)
 python-crawler/data/
-python-crawler/*.db
-python-crawler/*.sqlite3
 
 # Editor directories and files
 .vscode/*

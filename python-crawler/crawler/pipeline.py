@@ -20,8 +20,14 @@ logger = logging.getLogger(__name__)
 def run_pipeline(
     sources: list[JobSource],
     client: PoliteHTTPClient,
-    storage: Storage,
+    storage: Storage | None,
 ) -> None:
+    """Fetch every source and, if `storage` is given, upsert the results.
+
+    `storage=None` runs a dry run: sources are fetched and logged exactly as
+    normal (still through every politeness check in the HTTP client) but
+    nothing is written anywhere.
+    """
     total_new = 0
     total_seen = 0
 
@@ -34,6 +40,11 @@ def run_pipeline(
             continue
         except Exception:
             logger.exception("Skipping %s after an unexpected error", source.name)
+            continue
+
+        if storage is None:
+            total_seen += len(postings)
+            logger.info("%s: %d listings seen (dry run, nothing stored)", source.name, len(postings))
             continue
 
         new_count = 0

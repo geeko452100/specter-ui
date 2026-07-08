@@ -1,14 +1,10 @@
 """
-SQLite-backed storage for scraped postings. SQLite (not Postgres) is used
-deliberately: this is a single-user, single-machine pipeline with no
-concurrent writers, so running a database server would be pure overhead.
+PostgreSQL-backed storage for scraped postings.
 """
 
 from __future__ import annotations
 
-import sqlite3
-from datetime import datetime, timezone
-from pathlib import Path
+import psycopg
 
 from .models import JobPosting
 
@@ -20,67 +16,54 @@ CREATE TABLE IF NOT EXISTS postings (
     company TEXT NOT NULL,
     url TEXT NOT NULL,
     location TEXT,
-    remote INTEGER,
+    remote BOOLEAN,
     description TEXT,
     tags TEXT,
     posted_at TEXT,
-    first_seen_at TEXT NOT NULL,
-    last_seen_at TEXT NOT NULL,
+    first_seen_at TIMESTAMPTZ NOT NULL,
+    last_seen_at TIMESTAMPTZ NOT NULL,
     PRIMARY KEY (source, external_id)
 );
 """
 
 
 class Storage:
-    def __init__(self, db_path: Path) -> None:
-        db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(db_path)
+    def __init__(self, dsn: str) -> None:
+        self._conn = psycopg.connect(dsn, autocommit=True)
         self._conn.execute(SCHEMA)
-        self._conn.commit()
 
     def upsert(self, posting: JobPosting) -> bool:
         """Insert a posting, or refresh last_seen_at if already known.
 
         Returns True if this was a new posting, False if it already existed.
+        The `xmax = 0` check is the standard Postgres trick for telling an
+        INSERT apart from an ON CONFLICT UPDATE in a single round trip.
         """
-        now = datetime.now(timezone.utc).isoformat()
-        cursor = self._conn.execute(
-            "SELECT 1 FROM postings WHERE source = ? AND external_id = ?",
-            (posting.source, posting.external_id),
-        )
-        is_new = cursor.fetchone() is None
-
-        if is_new:
-            self._conn.execute(
-                """
-                INSERT INTO postings (
-                    source, external_id, title, company, url, location,
-                    remote, description, tags, posted_at,
-                    first_seen_at, last_seen_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    posting.source,
-                    posting.external_id,
-                    posting.title,
-                    posting.company,
-                    posting.url,
-                    posting.location,
-                    posting.remote,
-                    posting.description,
-                    ",".join(posting.tags),
-                    posting.posted_at,
-                    now,
-                    now,
-                ),
-            )
-        else:
-            self._conn.execute(
-                "UPDATE postings SET last_seen_at = ? WHERE source = ? AND external_id = ?",
-                (now, posting.source, posting.external_id),
-            )
-        self._conn.commit()
-        return is_new
+        row = self._conn.execute(
+            """
+            INSERT INTO postings (
+                source, external_id, title, company, url, location,
+                remote, description, tags, posted_at,
+                first_seen_at, last_seen_at
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now(), now())
+            ON CONFLICT (source, external_id)
+            DO UPDATE SET last_seen_at = now()
+            RETURNING (xmax = 0) AS inserted
+            """,
+            (
+                posting.source,
+                posting.external_id,
+                posting.title,
+                posting.company,
+                posting.url,
+                posting.location,
+                posting.remote,
+                posting.description,
+                ",".join(posting.tags),
+                posting.posted_at,
+            ),
+        ).fetchone()
+        return bool(row[0])
 
     def close(self) -> None:
         self._conn.close()

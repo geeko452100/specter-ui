@@ -37,7 +37,15 @@ MAX_CONSECUTIVE_FAILURES = 3
 # into a runaway crawl — raise it deliberately, not by accident.
 MAX_REQUESTS_PER_RUN = 200
 
-DB_PATH = Path(__file__).resolve().parent.parent / "data" / "jobs.db"
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    "postgresql://postgres:postgres@localhost:5433/specter_jobs",
+)
+
+# The hand-off file for nodejs-backend (not built yet) to read the private
+# board's data from. Written atomically after every real run — see
+# crawler/export.py.
+EXPORT_JSON_PATH = Path(__file__).resolve().parent.parent / "data" / "postings.json"
 
 # Edit this list with the boards relevant to your own search. Each entry
 # below is a real, public example so the pipeline runs end-to-end out of

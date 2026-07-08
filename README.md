@@ -98,44 +98,135 @@ area depending on the source's terms of service, and the output is a curated
 list built around one person's job criteria — not a product meant for other
 users. Keeping it access-gated avoids both problems.
 
-**Legality and etiquette were the first design constraint, not an
-afterthought** — see [`python-crawler/README.md`](python-crawler/README.md)
-for the full reasoning, but in short:
+### Legality and etiquette come first
 
-- **No HTML scraping.** Every source adapter talks to a documented public
-  API or feed its provider explicitly publishes for external consumption —
-  Greenhouse's Job Board API, Lever's Postings API, RemoteOK's `/api`, We
-  Work Remotely's category RSS feeds.
-- **A hard-coded blocklist**, checked on every request, refuses any domain
-  whose Terms of Service prohibit automated scraping (LinkedIn, Indeed,
-  Glassdoor, and others) — this is not a config toggle someone could
-  accidentally switch off.
-- **robots.txt is checked before every request**, failing closed (treated
-  as disallowed) if it can't be fetched — even for the "public API"
-  sources, as defense in depth.
-- **Sequential, rate-limited, single connection per host**, with a
-  robots.txt `Crawl-delay` (when published) always overriding the default
-  minimum interval upward. A circuit breaker backs off and gives up on a
-  host after repeated failures instead of retrying into trouble, and a hard
-  per-run request cap prevents any runaway crawl.
-- **Identifies itself honestly** via a `User-Agent` carrying a real contact
-  email — the client refuses to run without one.
+This is the actual design priority, not a disclaimer at the bottom. Every
+rule below is enforced in code, not just documented:
 
-**Architecture:** per-source adapters (`crawler/sources/`) → a shared
-`PoliteHTTPClient` that enforces all of the above → normalize into a common
-`JobPosting` record → upsert into SQLite, deduplicated on `(source,
-external_id)`. SQLite over Postgres was a deliberate choice: single user,
-single machine, no concurrent writers — a database server would be pure
-overhead here.
+- **Only documented public APIs/feeds, never scraped HTML.** Every source in
+  `python-crawler/crawler/sources/` talks to an API or feed its provider
+  explicitly publishes for external/programmatic consumption (Greenhouse's
+  Job Board API, Lever's Postings API, RemoteOK's `/api` endpoint, We Work
+  Remotely's category RSS feeds). No source parses a page that wasn't meant
+  to be machine-read.
+- **A hard-coded blocklist, not a config option.** `crawler/blocklist.py`
+  refuses any request to a domain whose Terms of Service explicitly
+  prohibit automated scraping (LinkedIn, Indeed, Glassdoor, ZipRecruiter,
+  Monster), regardless of what a config file says. It can't be bypassed by
+  editing `config.py` — it's a separate check every request passes through.
+- **robots.txt is checked before every request**, including requests to the
+  "public API" sources above — `crawler/robots.py`. If robots.txt can't be
+  fetched or parsed, the crawler fails *closed* (treats the site as fully
+  disallowed), not open.
+- **Rate-limited per host, sequentially, no concurrency.**
+  `crawler/throttle.py` enforces a minimum 3-second gap between requests to
+  the same host by default, and a site's own robots.txt `Crawl-delay` — when
+  published — always overrides that upward, never downward.
+- **Backs off and gives up on trouble, never retries into it.**
+  `crawler/http_client.py` honors `Retry-After` on `429`/`5xx` responses,
+  otherwise backs off exponentially; after 3 consecutive failures to a
+  host, a circuit breaker skips that host for the rest of the run instead
+  of continuing to hit it.
+- **A hard per-run request cap** (`MAX_REQUESTS_PER_RUN` in `config.py`)
+  guarantees a bug or a misconfigured source list can't spiral into a
+  runaway crawl.
+- **Identifies itself honestly.** Every request goes out with a descriptive
+  `User-Agent` that includes a real contact email, so any site operator can
+  identify this bot and reach out — the client refuses to start without one
+  (see `CRAWLER_CONTACT_EMAIL` below).
+
+One consequence of taking this seriously: **LinkedIn and Indeed are not, and
+will not be, sources here.** Their Terms of Service prohibit automated
+access to job data, and no robots.txt allowance or technical workaround
+changes that.
+
+### Architecture
+
+```
+sources (fetch)  →  normalize (per-adapter)  →  dedupe + store (Postgres)  →  export (JSON)
+```
+
+- **`crawler/sources/`** — one adapter per provider. Each adapter's
+  docstring names the specific public API/feed it's built on.
+- **`crawler/http_client.py`** — the only place allowed to make outbound
+  HTTP requests; every call passes through the blocklist, robots.txt check,
+  throttle, and circuit breaker described above.
+- **`crawler/storage.py`** — Postgres via `psycopg`. `postings` is keyed on
+  `(source, external_id)`, so re-running the pipeline is a safe upsert:
+  already-known postings just get `last_seen_at` refreshed instead of being
+  duplicated.
+- **`crawler/pipeline.py`** — runs each configured source in turn; one
+  source failing (disallowed by robots.txt, circuit open, unexpected error)
+  is logged and skipped, not fatal to the run. Pass `storage=None` for a dry
+  run — sources are still fetched through every politeness check, nothing
+  is persisted.
+- **`crawler/export.py`** — the hand-off point to `nodejs-backend` (see
+  below).
+
+### Feeding `nodejs-backend`
+
+`nodejs-backend` isn't set up yet — that's a separate, later piece of work.
+This crawler is already prepared for it, though: every real (non-dry-run)
+run ends by exporting the full `postings` table to **`data/postings.json`**
+as a JSON array, written atomically (temp file + rename) so a reader —
+eventually the Node service — never observes a half-written file mid-export.
+
+JSON was chosen over having Node query Postgres directly: it keeps the two
+services decoupled, with no shared database credentials or driver
+dependency across the Python/Node boundary. Node just reads a file.
+
+Each element in `data/postings.json` has this shape:
+
+```json
+{
+  "source": "greenhouse:stripe",
+  "external_id": "12345",
+  "title": "Senior Frontend Engineer",
+  "company": "stripe",
+  "url": "https://job-boards.greenhouse.io/stripe/jobs/12345",
+  "location": "Remote - US",
+  "remote": true,
+  "description": "...",
+  "tags": ["react", "typescript"],
+  "posted_at": "2026-07-01T00:00:00+00:00",
+  "first_seen_at": "2026-07-07T19:35:29.478+00:00",
+  "last_seen_at": "2026-07-07T19:36:02.000+00:00"
+}
+```
+
+`data/` is gitignored — this file is private output, not committed. Re-run
+the export without re-running the whole pipeline with
+`python -m crawler.export`.
+
+### Setup and usage
+
+Requires a Postgres instance. `docker-compose.yml` in `python-crawler/`
+starts one locally on **port 5433** (not the default 5432, so it won't
+collide with a Postgres instance already running for another project):
 
 ```bash
 cd python-crawler
+docker compose up -d              # Postgres on localhost:5433
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env   # set CRAWLER_CONTACT_EMAIL
-python -m crawler.run --dry-run   # fetch + log, no writes
-python -m crawler.run             # upserts into data/jobs.db (gitignored)
+cp .env.example .env              # set CRAWLER_CONTACT_EMAIL; DATABASE_URL
+                                   # already matches docker-compose.yml
+
+python -m crawler.run --dry-run --verbose   # fetch + log, no writes
+python -m crawler.run                       # upserts into Postgres, exports JSON
 ```
+
+### Adding a source
+
+Edit `SOURCES` in `crawler/config.py`. Only add a provider that publishes a
+documented public API or feed meant for external consumption — confirm that
+before writing the adapter, not after. Each existing adapter in
+`crawler/sources/` is a template: fetch from the provider's endpoint via the
+shared `PoliteHTTPClient`, yield `JobPosting` records.
+
+Do not add an HTML-scraping adapter without first reading the target site's
+robots.txt and current Terms of Service yourself — the automated checks here
+are a safety net, not a substitute for that judgment call.
 
 ---
 
@@ -213,9 +304,9 @@ coding agent, rather than written top-down from a spec.
 
 The honest version of this project's story is that it's still being built —
 the frontend is live, the crawler pipeline is implemented and verified
-end-to-end (see [`python-crawler/README.md`](python-crawler/README.md)), and
-`nodejs-backend` is still just a design. That's reflected in this README
-rather than glossed over.
+end-to-end (see the `python-crawler` section above), and `nodejs-backend` is
+still just a design. That's reflected in this README rather than glossed
+over.
 
 ## License
 
