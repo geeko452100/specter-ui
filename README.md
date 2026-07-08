@@ -86,37 +86,55 @@ npm run preview     # preview the production build locally
 
 ## 2. `python-crawler` — private job board & data pipeline
 
-*Status: architecture defined, implementation in progress.*
+*Status: pipeline and source adapters implemented; the viewing UI is still
+to come.*
 
-A scraper and data pipeline that aggregates job postings relevant to my own
-search, normalizes them, and surfaces them through a board that **only I can
-view** — it is intentionally not part of the public portfolio surface.
+A pipeline that pulls job postings relevant to my own search, normalizes
+them, and stores them for a board that **only I can view** — it is
+intentionally not part of the public portfolio surface.
 
 **Why it's private:** scraping job boards sits in a legal and ethical gray
 area depending on the source's terms of service, and the output is a curated
 list built around one person's job criteria — not a product meant for other
 users. Keeping it access-gated avoids both problems.
 
-**Planned architecture:**
+**Legality and etiquette were the first design constraint, not an
+afterthought** — see [`python-crawler/README.md`](python-crawler/README.md)
+for the full reasoning, but in short:
 
-- **Collection** — per-source scrapers (`requests` / `httpx` + `BeautifulSoup`,
-  falling back to Playwright for JS-rendered boards), each isolated so one
-  source breaking doesn't take down the others.
-- **Pipeline** — a normalize → dedupe → enrich → store sequence: raw listings
-  are mapped to a common schema, deduplicated against previously seen
-  postings (by source + external ID, with a fuzzy title/company fallback),
-  and tagged (remote/hybrid, seniority, stack match) before persisting.
-- **Storage** — Postgres, queried by the private board and by a small
-  scheduled job that re-runs the pipeline on an interval rather than on
-  every request, so scraping load stays predictable and polite.
-- **Access** — the board sits behind authentication; it is not linked from
-  `react-frontend` and is not intended to be discoverable.
+- **No HTML scraping.** Every source adapter talks to a documented public
+  API or feed its provider explicitly publishes for external consumption —
+  Greenhouse's Job Board API, Lever's Postings API, RemoteOK's `/api`, We
+  Work Remotely's category RSS feeds.
+- **A hard-coded blocklist**, checked on every request, refuses any domain
+  whose Terms of Service prohibit automated scraping (LinkedIn, Indeed,
+  Glassdoor, and others) — this is not a config toggle someone could
+  accidentally switch off.
+- **robots.txt is checked before every request**, failing closed (treated
+  as disallowed) if it can't be fetched — even for the "public API"
+  sources, as defense in depth.
+- **Sequential, rate-limited, single connection per host**, with a
+  robots.txt `Crawl-delay` (when published) always overriding the default
+  minimum interval upward. A circuit breaker backs off and gives up on a
+  host after repeated failures instead of retrying into trouble, and a hard
+  per-run request cap prevents any runaway crawl.
+- **Identifies itself honestly** via a `User-Agent` carrying a real contact
+  email — the client refuses to run without one.
+
+**Architecture:** per-source adapters (`crawler/sources/`) → a shared
+`PoliteHTTPClient` that enforces all of the above → normalize into a common
+`JobPosting` record → upsert into SQLite, deduplicated on `(source,
+external_id)`. SQLite over Postgres was a deliberate choice: single user,
+single machine, no concurrent writers — a database server would be pure
+overhead here.
 
 ```bash
 cd python-crawler
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt   # once implemented
-python -m crawler.run
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env   # set CRAWLER_CONTACT_EMAIL
+python -m crawler.run --dry-run   # fetch + log, no writes
+python -m crawler.run             # upserts into data/jobs.db (gitignored)
 ```
 
 ---
@@ -194,8 +212,10 @@ coding agent, rather than written top-down from a spec.
   came up.
 
 The honest version of this project's story is that it's still being built —
-the frontend is live, the other two services are designed and in progress.
-That's reflected in this README rather than glossed over.
+the frontend is live, the crawler pipeline is implemented and verified
+end-to-end (see [`python-crawler/README.md`](python-crawler/README.md)), and
+`nodejs-backend` is still just a design. That's reflected in this README
+rather than glossed over.
 
 ## License
 
