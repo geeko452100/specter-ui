@@ -37,14 +37,20 @@ MAX_CONSECUTIVE_FAILURES = 3
 # into a runaway crawl — raise it deliberately, not by accident.
 MAX_REQUESTS_PER_RUN = 200
 
-DATABASE_URL = os.environ.get(
-    "DATABASE_URL",
-    "postgresql://postgres:postgres@localhost:5433/specter_jobs",
-)
+# A Neon (neon.tech) connection string — copy it from the Neon console for
+# your project. No self-hosted Postgres to run or back up: Neon owns that.
+# Required and fail-fast, same policy PoliteHTTPClient uses for a missing
+# contact email — a misconfigured database should break loudly at startup.
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError(
+        "Missing required environment variable: DATABASE_URL. Copy a "
+        "connection string from your Neon project's console — see "
+        "python-crawler/.env.example."
+    )
 
-# The hand-off file for nodejs-backend (not built yet) to read the private
-# board's data from. Written atomically after every real run — see
-# crawler/export.py.
+# The hand-off file for nodejs-backend to read the private board's data
+# from. Written atomically after every real run — see crawler/export.py.
 EXPORT_JSON_PATH = Path(__file__).resolve().parent.parent / "data" / "postings.json"
 
 # Edit this list with the boards relevant to your own search. Each entry

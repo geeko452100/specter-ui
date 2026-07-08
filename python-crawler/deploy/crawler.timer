@@ -1,0 +1,11 @@
+[Unit]
+Description=Run the SpecterUI job crawler every 6 hours
+
+[Timer]
+OnCalendar=*-*-* 00,06,12,18:00:00
+# If the VM was off or rebooting when a run was due, catch up shortly
+# after boot instead of silently waiting for the next scheduled slot.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

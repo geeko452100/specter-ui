@@ -1,0 +1,13 @@
+# Copy to /etc/cloudflared/config.yml on the VM (after `cloudflared tunnel
+# create specter-backend`) and replace <TUNNEL_ID> and the hostname below.
+# No inbound port is opened on the VM — cloudflared makes an outbound
+# connection to Cloudflare, which routes the public hostname to it.
+
+tunnel: <TUNNEL_ID>
+credentials-file: /root/.cloudflared/<TUNNEL_ID>.json
+
+ingress:
+  - hostname: api.specterui.dev
+    service: http://localhost:4000
+  # Required catch-all — cloudflared refuses to start without one.
+  - service: http_status:404

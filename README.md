@@ -1,9 +1,9 @@
 # SpecterUI
 
 Gavin Griffith's developer portfolio — and the systems behind it. This repo is
-a monorepo: a public-facing frontend, a private job-search pipeline, and a
-recruiter-scheduling backend, each solving a different problem with the stack
-that fits it best.
+a monorepo: a public-facing frontend, a private job-search pipeline, and the
+API that serves it, each solving a different problem with the stack that fits
+it best.
 
 > **Live site:** [specterui.dev](https://specterui.dev)
 
@@ -18,22 +18,18 @@ place, instead of scattered across unrelated repos with no shared context.
 specter-ui/
 ├── react-frontend/     # public portfolio — React + TypeScript + Vite
 ├── python-crawler/     # private job board — scraper + data pipeline
-└── nodejs-backend/      # recruiter booking API — Node.js + TypeScript + Calendly
+└── nodejs-backend/     # private job board API — Node.js + TypeScript
 ```
 
 ## Architecture
 
 ```
-                     ┌────────────────────┐
-   job postings ───▶ │   python-crawler    │ ── normalized listings ──▶ private
-   (target boards)   │  scrape → clean →   │                            job board
-                      │  dedupe → store     │                          (auth-gated,
-                      └────────────────────┘                            me only)
-
-   recruiter    ───▶ ┌────────────────────┐
-   picks a slot      │    nodejs-backend    │ ── webhook ──▶ Calendly
-                      │  booking API + TS   │ ── notifies ──▶ me (email/log)
-                      └────────────────────┘
+                     ┌────────────────────┐        ┌────────────────────┐
+   job postings ───▶ │   python-crawler    │──────▶ │    nodejs-backend    │
+   (target boards)   │  scrape → clean →   │  JSON  │  serves postings.json│──▶ me only
+                      │  dedupe → store     │  file  │  behind a bearer    │  (auth-gated)
+                      └────────────────────┘        │  token              │
+                                                       └────────────────────┘
 
    visitors     ───▶ ┌────────────────────┐
                       │   react-frontend    │  — the only piece anyone
@@ -43,9 +39,9 @@ specter-ui/
 ```
 
 Each service is independently deployable and owns its own data. The frontend
-never talks to the crawler's storage directly, and the booking backend never
-touches crawler data at all — the only thing they have in common is that they
-were built to make one person's job search less manual.
+never talks to the crawler's storage directly — the only thing these three
+have in common is that they were built to make one person's job search less
+manual.
 
 ---
 
@@ -151,10 +147,11 @@ sources (fetch)  →  normalize (per-adapter)  →  dedupe + store (Postgres)  �
 - **`crawler/http_client.py`** — the only place allowed to make outbound
   HTTP requests; every call passes through the blocklist, robots.txt check,
   throttle, and circuit breaker described above.
-- **`crawler/storage.py`** — Postgres via `psycopg`. `postings` is keyed on
-  `(source, external_id)`, so re-running the pipeline is a safe upsert:
-  already-known postings just get `last_seen_at` refreshed instead of being
-  duplicated.
+- **`crawler/storage.py`** — Postgres via `psycopg`, hosted on
+  [Neon](https://neon.tech) rather than self-managed — no database server
+  to run, patch, or back up. `postings` is keyed on `(source,
+  external_id)`, so re-running the pipeline is a safe upsert: already-known
+  postings just get `last_seen_at` refreshed instead of being duplicated.
 - **`crawler/pipeline.py`** — runs each configured source in turn; one
   source failing (disallowed by robots.txt, circuit open, unexpected error)
   is logged and skipped, not fatal to the run. Pass `storage=None` for a dry
@@ -165,13 +162,11 @@ sources (fetch)  →  normalize (per-adapter)  →  dedupe + store (Postgres)  �
 
 ### Feeding `nodejs-backend`
 
-`nodejs-backend` isn't set up yet — that's a separate, later piece of work.
-This crawler is already prepared for it, though: every real (non-dry-run)
-run ends by exporting the full `postings` table to **`data/postings.json`**
-as a JSON array, written atomically (temp file + rename) so a reader —
-eventually the Node service — never observes a half-written file mid-export.
+Every real (non-dry-run) run ends by exporting the full `postings` table to
+**`data/postings.json`** as a JSON array, written atomically (temp file +
+rename) so `nodejs-backend` never observes a half-written file mid-export.
 
-JSON was chosen over having Node query Postgres directly: it keeps the two
+JSON was chosen over having Node query Neon directly: it keeps the two
 services decoupled, with no shared database credentials or driver
 dependency across the Python/Node boundary. Node just reads a file.
 
@@ -200,20 +195,19 @@ the export without re-running the whole pipeline with
 
 ### Setup and usage
 
-Requires a Postgres instance. `docker-compose.yml` in `python-crawler/`
-starts one locally on **port 5433** (not the default 5432, so it won't
-collide with a Postgres instance already running for another project):
+Storage is [Neon](https://neon.tech) (managed serverless Postgres) — no
+database to run or back up yourself. Create a project in the Neon console,
+copy its connection string, and set it as `DATABASE_URL`:
 
 ```bash
 cd python-crawler
-docker compose up -d              # Postgres on localhost:5433
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env              # set CRAWLER_CONTACT_EMAIL; DATABASE_URL
-                                   # already matches docker-compose.yml
+cp .env.example .env              # set CRAWLER_CONTACT_EMAIL and DATABASE_URL
+                                   # (from the Neon console)
 
 python -m crawler.run --dry-run --verbose   # fetch + log, no writes
-python -m crawler.run                       # upserts into Postgres, exports JSON
+python -m crawler.run                       # upserts into Neon, exports JSON
 ```
 
 ### Adding a source
@@ -230,13 +224,7 @@ are a safety net, not a substitute for that judgment call.
 
 ---
 
-## 3. `nodejs-backend` — job board API and recruiter interview booking
-
-A TypeScript backend with two responsibilities, built at different times:
-serving the private job board's data (implemented), and eventually sitting
-between recruiters and my calendar via Calendly (still just a design).
-
-### Job board API — *implemented*
+## 3. `nodejs-backend` — private job board API
 
 **Stack:** Node.js, TypeScript, Express 5.
 
@@ -279,28 +267,98 @@ curl -H "Authorization: Bearer $API_TOKEN" \
   "http://localhost:4000/api/postings?remote=true&company=stripe"
 ```
 
-### Recruiter interview booking — *planned*
+---
 
-**Why not just embed a Calendly widget and call it done:** the widget alone
-gets you a booking link, but nothing ties that booking back into anything
-else — no server-side record, no custom confirmation flow, no place to add
-logic later (e.g. pre-screening questions, routing by role, notifying me
-somewhere other than email). This piece exists to own that logic instead of
-letting it live entirely inside a third-party iframe.
+## Deployment
 
-**Planned architecture:**
+`react-frontend` deploys to Cloudflare Pages. `python-crawler` and
+`nodejs-backend` deploy together to a single Ubuntu VM — they have to be
+co-located, since the JSON hand-off between them (`data/postings.json`) is a
+file on disk, not a network call.
 
-- **Calendly as the source of truth for availability** — this backend does
-  not model calendar state itself; it consumes Calendly's webhooks
-  (`invitee.created`, `invitee.canceled`) and reacts to them, which avoids
-  the class of bugs that comes from keeping a second calendar in sync.
-- **Webhook receiver → verify signature → persist booking → notify.**
-  Verification uses Calendly's webhook signing secret; persistence is
-  minimal (who booked, when, for what) since Calendly already holds the
-  authoritative event data.
-- **Reachable from the public internet**, unlike the job-board API above —
-  it's the only piece of `nodejs-backend` that needs to be, since Calendly's
-  webhook delivery has to reach it.
+### `react-frontend` → Cloudflare Pages
+
+Via the Pages dashboard (Workers & Pages → Create → Pages → connect to Git):
+
+- **Root directory:** `react-frontend`
+- **Build command:** `npm run build`
+- **Build output directory:** `dist`
+
+React Router needs every path to resolve to `index.html` client-side, which
+Pages doesn't do by default for a static build —
+[`react-frontend/public/_redirects`](react-frontend/public/_redirects)
+(`/* /index.html 200`) handles that; Vite copies it into `dist/` on every
+build. Add the custom domain under the Pages project's **Custom domains**
+tab once the first deploy succeeds.
+
+### `python-crawler` + `nodejs-backend` → Ubuntu VM
+
+Prerequisites on the VM: Python 3.11+, Node.js 22+, git — no Docker needed,
+since storage is Neon (managed) rather than a self-hosted database. The
+paths below assume the repo lives at `/opt/specter-ui` — adjust the
+`WorkingDirectory`/`EnvironmentFile` paths in the `.service`/`.timer` files
+under each service's `deploy/` folder if you put it somewhere else.
+
+```bash
+git clone <this-repo-url> /opt/specter-ui
+cd /opt/specter-ui
+```
+
+**python-crawler:**
+
+```bash
+cd python-crawler
+cp .env.example .env   # set CRAWLER_CONTACT_EMAIL and DATABASE_URL (Neon console)
+
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/python -m crawler.run   # run once by hand to confirm it works
+
+sudo cp deploy/crawler.service deploy/crawler.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now crawler.timer   # runs every 6 hours from here on
+```
+
+**nodejs-backend:**
+
+```bash
+cd ../nodejs-backend
+cp .env.example .env   # set API_TOKEN
+npm install
+npm run build
+
+sudo cp deploy/nodejs-backend.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now nodejs-backend.service
+```
+
+**Exposing `nodejs-backend` via Cloudflare Tunnel** (no inbound port opened
+on the VM — `cloudflared` makes an outbound connection to Cloudflare, which
+routes a subdomain to it; reuses the same Cloudflare account as the Pages
+deploy above):
+
+```bash
+# install cloudflared (see Cloudflare's docs for the current apt repo setup), then:
+cloudflared tunnel login
+cloudflared tunnel create specter-backend
+cloudflared tunnel route dns specter-backend api.specterui.dev
+
+sudo mkdir -p /etc/cloudflared
+sudo cp nodejs-backend/deploy/cloudflared-config.example.yml /etc/cloudflared/config.yml
+# edit /etc/cloudflared/config.yml: fill in <TUNNEL_ID> in both places
+
+sudo cloudflared service install
+sudo systemctl enable --now cloudflared
+```
+
+Verify from outside the VM: `curl https://api.specterui.dev/health` should
+return `{"status":"ok"}` with no port open on the VM's firewall at all.
+
+Redeploying after a code change, for either service: `git pull`, reinstall
+if dependencies changed, `npm run build` for `nodejs-backend`, then
+`sudo systemctl restart nodejs-backend` (or just wait for the next
+`crawler.timer` run — no restart needed for the crawler, it's not a
+long-running process).
 
 ---
 
@@ -315,11 +373,10 @@ coding agent, rather than written top-down from a spec.
 
 - **The site did not launch with its current shape.** Early commits show a
   booking system built directly into the frontend on Cloudflare Workers, then
-  removed a few commits later. That wasn't a mistake to hide — it's the
-  reason `nodejs-backend` exists as a separate service now: booking logic
-  bolted onto the frontend didn't scale past a prototype, so it got pulled
-  out and rebuilt as its own backend with a real integration (Calendly)
-  instead of a workaround.
+  removed a few commits later — bolting that kind of logic onto the frontend
+  didn't scale past a prototype. That wasn't a mistake to hide; it's part of
+  why backend logic now lives in its own service (`nodejs-backend`) instead
+  of inside the frontend.
 - **TypeScript came after the design settled, not before.** The component
   structure and layout were iterated on in JS first; migrating to TypeScript
   was a distinct, deliberate pass once the shape of things stopped changing
@@ -331,16 +388,15 @@ coding agent, rather than written top-down from a spec.
   moving to the next, which is closer to how a second engineer would review
   a diff than how a solo project usually gets built.
 - **The architecture docs above were written the same way the code was:**
-  by describing intent and constraints (private job data, Calendly as the
-  source of truth for availability, isolated scrapers per source) and
-  working through the reasoning rather than accepting the first design that
-  came up.
+  by describing intent and constraints (private job data, isolated scrapers
+  per source, one bearer token instead of a full auth system) and working
+  through the reasoning rather than accepting the first design that came up.
 
 The honest version of this project's story is that it's still being built —
-the frontend is live, the crawler pipeline is implemented and verified
-end-to-end (see the `python-crawler` section above), and `nodejs-backend` is
-still just a design. That's reflected in this README rather than glossed
-over.
+the frontend is live, and both the crawler pipeline and the job board API
+are implemented and verified end-to-end (see the `python-crawler` and
+`nodejs-backend` sections above). That's reflected in this README rather
+than glossed over.
 
 ## License
 
