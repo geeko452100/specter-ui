@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useMemo, useRef, useState, type FormEvent } from 'react'
 
 interface JobPosting {
   source: string
@@ -15,7 +15,6 @@ interface JobPosting {
   match_terms: string[]
 }
 
-const TOKEN_STORAGE_KEY = 'specter.dashboard.token'
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string | undefined
 
 type LoadState =
@@ -24,56 +23,15 @@ type LoadState =
   | { status: 'error'; message: string }
   | { status: 'ready'; postings: JobPosting[] }
 
-type Mode = 'chooser' | 'token' | 'guest'
-
 function Dashboard() {
-  const [mode, setMode] = useState<Mode>('chooser')
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_STORAGE_KEY))
-  const [tokenInput, setTokenInput] = useState('')
-  const [state, setState] = useState<LoadState>(() => (token ? { status: 'loading' } : { status: 'idle' }))
+  const [state, setState] = useState<LoadState>({ status: 'idle' })
   const [remoteOnly, setRemoteOnly] = useState(false)
   const [minScore, setMinScore] = useState(0)
-  const guestFileInput = useRef<HTMLInputElement>(null)
+  const fileInput = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    if (token) setMode('token')
-  }, [token])
-
-  useEffect(() => {
-    if (!token) return
-
-    const controller = new AbortController()
-
-    fetch(`${API_BASE_URL}/api/postings`, {
-      headers: { Authorization: `Bearer ${token}` },
-      signal: controller.signal,
-    })
-      .then(async (res) => {
-        if (res.status === 401) {
-          localStorage.removeItem(TOKEN_STORAGE_KEY)
-          setToken(null)
-          throw new Error('That token was rejected. Try again.')
-        }
-        if (res.status === 503) {
-          throw new Error("The crawler hasn't produced any postings yet — check back after the next run.")
-        }
-        if (!res.ok) {
-          throw new Error(`Request failed (${res.status}).`)
-        }
-        return res.json() as Promise<{ postings: JobPosting[] }>
-      })
-      .then((data) => setState({ status: 'ready', postings: data.postings }))
-      .catch((err: unknown) => {
-        if (controller.signal.aborted) return
-        setState({ status: 'error', message: err instanceof Error ? err.message : 'Something went wrong.' })
-      })
-
-    return () => controller.abort()
-  }, [token])
-
-  async function handleGuestSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const file = guestFileInput.current?.files?.[0]
+    const file = fileInput.current?.files?.[0]
     if (!file) return
 
     setState({ status: 'loading' })
@@ -93,6 +51,10 @@ function Dashboard() {
     }
   }
 
+  function handleStartOver() {
+    setState({ status: 'idle' })
+  }
+
   const filtered = useMemo(() => {
     if (state.status !== 'ready') return []
     return state.postings.filter((p) => {
@@ -101,27 +63,6 @@ function Dashboard() {
       return true
     })
   }, [state, remoteOnly, minScore])
-
-  function handleTokenSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!tokenInput.trim()) return
-    localStorage.setItem(TOKEN_STORAGE_KEY, tokenInput.trim())
-    setToken(tokenInput.trim())
-    setTokenInput('')
-    setState({ status: 'loading' })
-  }
-
-  function handleSignOut() {
-    localStorage.removeItem(TOKEN_STORAGE_KEY)
-    setToken(null)
-    setState({ status: 'idle' })
-    setMode('chooser')
-  }
-
-  function handleStartOver() {
-    setState({ status: 'idle' })
-    setMode('chooser')
-  }
 
   if (!API_BASE_URL) {
     return (
@@ -133,51 +74,19 @@ function Dashboard() {
     )
   }
 
-  if (mode === 'chooser') {
-    return (
-      <section className="mx-auto max-w-md px-6 py-24">
-        <p className="text-xs tracking-[0.4em] text-accent uppercase">job dashboard</p>
-        <h1 className="mt-3 font-display text-3xl tracking-wide text-bone sm:text-4xl">Two ways in</h1>
-        <p className="mt-4 text-smoke">
-          Postings pulled by python-crawler from multiple job boards. Try it yourself with your own
-          resume, or unlock the private view gated by an API token.
-        </p>
-        <div className="mt-8 space-y-4">
-          <button
-            type="button"
-            onClick={() => setMode('guest')}
-            className="w-full rounded-sm border border-accent/40 bg-accent-dim px-6 py-4 text-left transition-colors duration-300 hover:border-accent hover:bg-accent/20"
-          >
-            <span className="block text-sm tracking-widest text-bone uppercase">Try it with your resume</span>
-            <span className="mt-1 block text-xs text-dust">
-              Upload a .txt or .pdf resume — matched live, never stored.
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode('token')}
-            className="w-full rounded-sm border border-iron px-6 py-4 text-left transition-colors duration-300 hover:border-dust"
-          >
-            <span className="block text-sm tracking-widest text-dust uppercase">I have a token</span>
-            <span className="mt-1 block text-xs text-dust">Unlock the private, owner-scored view.</span>
-          </button>
-        </div>
-      </section>
-    )
-  }
-
-  if (mode === 'guest' && state.status !== 'ready') {
+  if (state.status !== 'ready') {
     return (
       <section className="mx-auto max-w-md px-6 py-24">
         <p className="text-xs tracking-[0.4em] text-accent uppercase">job dashboard</p>
         <h1 className="mt-3 font-display text-3xl tracking-wide text-bone sm:text-4xl">Try your resume</h1>
         <p className="mt-4 text-smoke">
-          Postings are ranked against your resume by keyword overlap, computed on the fly. The file is
-          never stored — it's read, scored, and discarded.
+          Postings pulled by python-crawler from multiple job boards, ranked against your resume by
+          keyword overlap, computed on the fly. The file is never stored — it's read, scored, and
+          discarded.
         </p>
-        <form onSubmit={handleGuestSubmit} className="mt-8 space-y-4">
+        <form onSubmit={handleSubmit} className="mt-8 space-y-4">
           <input
-            ref={guestFileInput}
+            ref={fileInput}
             type="file"
             accept=".txt,.pdf,text/plain,application/pdf"
             required
@@ -191,48 +100,6 @@ function Dashboard() {
           >
             {state.status === 'loading' ? 'Matching…' : 'Find my matches'}
           </button>
-          <button
-            type="button"
-            onClick={handleStartOver}
-            className="block text-xs tracking-widest text-dust uppercase transition-colors hover:text-smoke"
-          >
-            &larr; Back
-          </button>
-        </form>
-      </section>
-    )
-  }
-
-  if (mode === 'token' && !token) {
-    return (
-      <section className="mx-auto max-w-md px-6 py-24">
-        <p className="text-xs tracking-[0.4em] text-accent uppercase">private</p>
-        <h1 className="mt-3 font-display text-3xl tracking-wide text-bone sm:text-4xl">Job dashboard</h1>
-        <p className="mt-4 text-smoke">
-          Gated by the same bearer token nodejs-backend expects. Nothing is sent anywhere but the API.
-        </p>
-        <form onSubmit={handleTokenSubmit} className="mt-8 space-y-4">
-          <input
-            type="password"
-            required
-            value={tokenInput}
-            onChange={(e) => setTokenInput(e.target.value)}
-            placeholder="API token"
-            className="w-full rounded-sm border border-iron bg-ash/60 px-4 py-3 text-bone outline-none transition-colors focus:border-accent/60"
-          />
-          <button
-            type="submit"
-            className="rounded-sm border border-accent/40 bg-accent-dim px-6 py-3 text-sm tracking-widest text-bone uppercase transition-colors duration-300 hover:border-accent hover:bg-accent/20"
-          >
-            Unlock
-          </button>
-          <button
-            type="button"
-            onClick={handleStartOver}
-            className="block text-xs tracking-widest text-dust uppercase transition-colors hover:text-smoke"
-          >
-            &larr; Back
-          </button>
         </form>
       </section>
     )
@@ -242,21 +109,20 @@ function Dashboard() {
     <section className="mx-auto max-w-5xl px-6 py-24">
       <div className="flex items-baseline justify-between">
         <div>
-          <p className="text-xs tracking-[0.4em] text-accent uppercase">{mode === 'token' ? 'private' : 'guest'}</p>
+          <p className="text-xs tracking-[0.4em] text-accent uppercase">guest</p>
           <h1 className="mt-3 font-display text-3xl tracking-wide text-bone sm:text-4xl">Job dashboard</h1>
         </div>
         <button
           type="button"
-          onClick={mode === 'token' ? handleSignOut : handleStartOver}
+          onClick={handleStartOver}
           className="text-xs tracking-widest text-dust uppercase transition-colors hover:text-smoke"
         >
-          {mode === 'token' ? 'Sign out' : 'Start over'}
+          Start over
         </button>
       </div>
       <p className="mt-4 max-w-xl text-smoke">
-        {mode === 'token'
-          ? 'Postings pulled by python-crawler, ranked by TF-IDF match against my resume/skills profile — best fit first.'
-          : 'Postings pulled by python-crawler, ranked by keyword overlap against the resume you uploaded — best fit first.'}
+        Postings pulled by python-crawler, ranked by keyword overlap against the resume you uploaded —
+        best fit first.
       </p>
 
       <div className="mt-10 flex flex-wrap items-center gap-6">
@@ -285,13 +151,9 @@ function Dashboard() {
         </label>
       </div>
 
-      {state.status === 'loading' && <p className="mt-14 text-sm text-dust">Loading postings…</p>}
-      {state.status === 'error' && <p className="mt-14 text-sm text-dust">{state.message}</p>}
-      {state.status === 'ready' && filtered.length === 0 && (
-        <p className="mt-14 text-sm text-dust">No postings match these filters.</p>
-      )}
+      {filtered.length === 0 && <p className="mt-14 text-sm text-dust">No postings match these filters.</p>}
 
-      {state.status === 'ready' && filtered.length > 0 && (
+      {filtered.length > 0 && (
         <div className="mt-10 grid gap-6 sm:grid-cols-2">
           {filtered.map((posting) => (
             <article

@@ -16,10 +16,8 @@ function App() {
         <Route path="work" element={<Work />} />
         <Route path="about" element={<About />} />
         <Route path="resume" element={<Resume />} />
-        <Route path="contact" element={<Contact />} />
-        {/* Not in the main nav — only reachable via the footer lock icon or
-            directly at /dashboard. See nodejs-backend's bearer-token gate. */}
         <Route path="dashboard" element={<Dashboard />} />
+        <Route path="contact" element={<Contact />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

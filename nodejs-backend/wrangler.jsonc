@@ -3,8 +3,8 @@
   "name": "specter-job-board-api",
   "main": "src/index.ts",
   "compatibility_date": "2026-07-01",
-  // Needed for node:crypto (constant-time token comparison in
-  // middleware/auth.ts). No filesystem access either way — R2 is storage.
+  // Needed by unpdf/pdf.js (routes/guestMatch.ts) for PDF text extraction.
+  // No filesystem access either way — R2 is storage.
   "compatibility_flags": ["nodejs_compat"],
   "r2_buckets": [
     {
@@ -26,14 +26,10 @@
     // rather than the onboarding@resend.dev sandbox address.
     "CONTACT_FROM_ADDRESS": "contact@specterui.dev"
   },
-  // Both hostnames point at this same Worker — it serves /api/postings
-  // (job dashboard) and /contact from one script either way.
-  "routes": [
-    { "pattern": "api.specterui.dev", "custom_domain": true },
-    { "pattern": "contact.specterui.dev", "custom_domain": true }
-  ]
-  // API_TOKEN and RESEND_API_KEY are secrets, not vars — set with:
-  //   wrangler secret put API_TOKEN
+  // Single hostname for everything — the frontend's VITE_API_BASE_URL
+  // points here for both /guest/match (job dashboard) and /contact.
+  "routes": [{ "pattern": "api.specterui.dev", "custom_domain": true }]
+  // RESEND_API_KEY is a secret, not a var — set with:
   //   wrangler secret put RESEND_API_KEY
   // (Resend API key: create a free account at resend.com, then an API key
   // under API Keys. Free tier is 3,000 emails/month.)

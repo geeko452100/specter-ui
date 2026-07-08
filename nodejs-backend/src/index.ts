@@ -1,14 +1,11 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { requireAuth } from "./middleware/auth.js";
 import { contactRoute } from "./routes/contact.js";
 import { guestMatchRoute } from "./routes/guestMatch.js";
 import { healthRoute } from "./routes/health.js";
-import { postingsRoute } from "./routes/postings.js";
 
 type Bindings = {
   POSTINGS_BUCKET: R2Bucket;
-  API_TOKEN: string;
   CORS_ORIGIN?: string;
   RESEND_API_KEY: string;
   CONTACT_TO_ADDRESS: string;
@@ -31,8 +28,6 @@ app.use("*", async (c, next) => {
 app.route("/", healthRoute);
 app.route("/", contactRoute);
 app.route("/", guestMatchRoute);
-app.use("/api/*", requireAuth);
-app.route("/api", postingsRoute);
 
 app.onError((err, c) => {
   console.error(err);
