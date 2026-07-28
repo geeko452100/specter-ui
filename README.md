@@ -1,6 +1,6 @@
 # SpecterUI
 
-Gavin Griffith's developer portfolio — and the systems behind it. This repo is
+My software developer portfolio — and the systems behind it. This repo is
 a monorepo: a public-facing frontend, a private job-search pipeline, and the
 API that serves it, each solving a different problem with the stack that fits
 it best.
