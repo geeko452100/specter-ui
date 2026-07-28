@@ -1,6 +1,7 @@
+import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import ThemeToggle from './ThemeToggle'
-import { LogoIcon } from './icons'
+import { CloseIcon, LogoIcon, MenuIcon } from './icons'
 
 type NavLinkItem = {
   to: string
@@ -18,9 +19,11 @@ const links: NavLinkItem[] = [
 ]
 
 function Layout() {
+  const [menuOpen, setMenuOpen] = useState(false)
+
   return (
     <div className="relative flex min-h-screen flex-col font-body text-smoke">
-      <header className="relative z-10 border-b-[0.5px] border-line print:hidden">
+      <header className="relative z-20 border-b-[0.5px] border-line print:hidden">
         <nav className="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
           <NavLink
             to="/"
@@ -29,7 +32,7 @@ function Layout() {
             <LogoIcon className="h-6 w-6" />
             SpecterUI
           </NavLink>
-          <div className="flex items-center gap-4">
+          <div className="hidden items-center gap-4 md:flex">
             <ul className="flex items-center gap-1 text-sm">
               {links.map(({ to, label, end }) => (
                 <li key={to}>
@@ -58,7 +61,41 @@ function Layout() {
             </ul>
             <ThemeToggle />
           </div>
+
+          <div className="flex items-center gap-3 md:hidden">
+            <ThemeToggle />
+            <button
+              type="button"
+              onClick={() => setMenuOpen((open) => !open)}
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={menuOpen}
+              className="rounded-sm border border-iron p-2 text-dust transition-all duration-300 hover:border-line hover:text-bone"
+            >
+              {menuOpen ? <CloseIcon className="h-5 w-5" /> : <MenuIcon className="h-5 w-5" />}
+            </button>
+          </div>
         </nav>
+
+        {menuOpen && (
+          <ul className="border-t border-line/60 px-6 py-4 text-sm md:hidden">
+            {links.map(({ to, label, end }) => (
+              <li key={to}>
+                <NavLink
+                  to={to}
+                  end={end}
+                  onClick={() => setMenuOpen(false)}
+                  className={({ isActive }) =>
+                    `block py-3 tracking-wide uppercase transition-colors duration-300 ${
+                      isActive ? 'text-bone' : 'text-dust hover:text-smoke'
+                    }`
+                  }
+                >
+                  {label}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        )}
       </header>
 
       <main className="relative z-10 flex-1">
