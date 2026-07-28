@@ -39,8 +39,26 @@ export function buildTokenSet(text: string): Set<string> {
   return new Set(tokenize(text));
 }
 
+// Posting descriptions come from job boards as raw HTML (`<p>`, `<a
+// href=...>`, `&nbsp;`). Workers has no DOM (no DOMParser) even with
+// nodejs_compat, so this is a regex strip rather than a real parser — left
+// in, tags/entities pollute the token set with junk like "href" and "nbsp"
+// that then shows up as a "match term". See python-crawler/crawler/matcher.py
+// for the equivalent fix on the site owner's own (HTMLParser-based) scoring.
+function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#0?39;/g, "'")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)));
+}
+
 function postingText(posting: JobPosting): string {
-  return [posting.title, posting.company, posting.description ?? "", posting.tags.join(" ")].join("\n");
+  return [posting.title, posting.company, stripHtml(posting.description ?? ""), posting.tags.join(" ")].join("\n");
 }
 
 export interface GuestMatch {
