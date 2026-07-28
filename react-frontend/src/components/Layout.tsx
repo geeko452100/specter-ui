@@ -68,7 +68,7 @@ function Layout() {
       <footer className="relative z-10 border-t-[0.5px] border-line print:hidden">
         <div className="mx-auto flex max-w-5xl flex-col items-center gap-2 px-6 py-8 text-center text-xs tracking-widest text-dust uppercase sm:flex-row sm:justify-between">
           <p>&copy; {new Date().getFullYear()} SpecterUI</p>
-          <p>ggriffith288@gmail.com</p>
+          <p>gavingriffith212@gmail.com</p>
         </div>
       </footer>
     </div>
