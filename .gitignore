@@ -62,3 +62,5 @@ python-crawler/profile/resume.txt
 
 # Claude / AI assistant local settings
 .claude/settings.local.json
+
+.dev.vars*
