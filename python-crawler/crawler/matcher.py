@@ -13,6 +13,7 @@ profile/resume.txt — editing your resume/skills text and re-running
 
 from __future__ import annotations
 
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +23,32 @@ from sklearn.metrics.pairwise import cosine_similarity
 # How many overlapping resume/job terms to surface per posting, for
 # explainability (why did this posting score the way it did).
 TOP_TERMS_PER_POSTING = 5
+
+
+class _HTMLTextExtractor(HTMLParser):
+    """Pulls the visible text out of an HTML fragment, dropping tags and
+    unescaping entities (HTMLParser does the latter itself via
+    convert_charrefs). Posting descriptions come from job boards as raw
+    HTML (`<p>`, `<a href=...>`, `&nbsp;`) — left in, tokens like "href",
+    "nbsp", and every URL's domain end up in the TF-IDF vocabulary and
+    dilute the real skill/tech terms a resume should be scored against.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._chunks: list[str] = []
+
+    def handle_data(self, data: str) -> None:
+        self._chunks.append(data)
+
+    def text(self) -> str:
+        return " ".join(self._chunks)
+
+
+def _strip_html(text: str) -> str:
+    parser = _HTMLTextExtractor()
+    parser.feed(text)
+    return parser.text()
 
 
 def load_profile_text(path: Path) -> str:
@@ -49,7 +76,7 @@ def _posting_text(posting: dict[str, Any]) -> str:
         [
             posting.get("title") or "",
             posting.get("company") or "",
-            posting.get("description") or "",
+            _strip_html(posting.get("description") or ""),
             " ".join(tags),
         ]
     )
@@ -70,7 +97,12 @@ def score_postings(postings: list[dict[str, Any]], profile_text: str) -> None:
         return
 
     corpus = [profile_text] + [_posting_text(p) for p in postings]
-    vectorizer = TfidfVectorizer(stop_words="english", max_features=5000)
+    vectorizer = TfidfVectorizer(
+        stop_words="english",
+        max_features=5000,
+        ngram_range=(1, 2),
+        sublinear_tf=True,
+    )
     matrix = vectorizer.fit_transform(corpus)
 
     profile_vector = matrix[0]
