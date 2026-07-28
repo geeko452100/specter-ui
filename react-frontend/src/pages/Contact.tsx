@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { GithubIcon, LinkedInIcon, MailIcon } from '../components/icons'
 
 const socials = [
-  { label: 'Email', href: 'mailto:ggriffith288@gmail.com', Icon: MailIcon },
+  { label: 'Email', href: 'mailto:gavingriffith212@gmail.com', Icon: MailIcon },
   { label: 'GitHub', href: 'https://github.com/geeko452100', Icon: GithubIcon },
   { label: 'LinkedIn', href: 'https://www.linkedin.com/in/gavin-griffith', Icon: LinkedInIcon },
 ]

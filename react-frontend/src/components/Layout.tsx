@@ -9,7 +9,7 @@ type NavLinkItem = {
 }
 
 const links: NavLinkItem[] = [
-  { to: '/home', label: 'Home', end: true },
+  { to: '/', label: 'Home', end: true },
   { to: '/work', label: 'Work' },
   { to: '/about', label: 'About' },
   { to: '/resume', label: 'Resume' },

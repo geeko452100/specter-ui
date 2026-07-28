@@ -9,7 +9,7 @@ const featured = [
     tags: ['React Frontend', 'FastAPI Backend', 'Groq AI Chatbot', 'Docker', 'Audio Streaming'],
     blurb:
       'A music streaming platform with a FastAPI backend for async, high-throughput data processing and a Groq-powered AI chatbot (gpt-oss-20b) that gives real-time, natural-language playlist recommendations — Dockerized end to end.',
-    github: 'https://github.com/geeko452100/MusicGallery'
+    github: 'https://github.com/geeko452100/music-gallery.git'
   },
   {
     title: 'RBAC Package Tracker with Ticket Management',
@@ -18,7 +18,7 @@ const featured = [
     tags: ['Next.js Auth', 'PostgreSQL DB', 'Secure Cookies', 'RBAC Permissions', 'Ticket Portal'],
     blurb:
       'Role based package management system along with a customer support management system',
-    github: 'https://github.com/geeko452100/RBAC-PkgTracker'
+    github: 'https://github.com/geeko452100/rbac-package.git'
   },
   {
     title: 'Job Dashboard',
@@ -27,7 +27,7 @@ const featured = [
     tags: ['Python Web Scraping', 'TF-IDF Matching', 'Cloudflare Workers API', 'React Dashboard', 'Resume Matching'],
     blurb:
       'A full-stack job-search pipeline that crawls postings from multiple boards, ranks every one by fit against a resume using TF-IDF + cosine similarity, and serves results live — try it yourself by uploading your own resume.',
-    github:'https://github.com/geeko452100/specter-ui'
+    github:'https://github.com/geeko452100/specter-ui.git'
   },
 ]
 
