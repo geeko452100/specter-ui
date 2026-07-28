@@ -21,7 +21,7 @@
     }
   ],
   "vars": {
-    "CONTACT_TO_ADDRESS": "ggriffith288@gmail.com",
+    "CONTACT_TO_ADDRESS": "gavingriffith212@gmail.com",
     // specterui.dev is verified in Resend, so we send from our own domain
     // rather than the onboarding@resend.dev sandbox address.
     "CONTACT_FROM_ADDRESS": "contact@specterui.dev",

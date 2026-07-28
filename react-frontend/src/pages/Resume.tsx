@@ -68,9 +68,9 @@ function Resume() {
             Full-Stack / Frontend Engineer &mdash; Great Bend, Kansas
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-dust print:mt-1.5 print:text-black">
-            <a href="mailto:ggriffith288@gmail.com" className="inline-flex items-center gap-1.5 hover:text-link print:text-black">
+            <a href="mailto:gavingriffith212@gmail.com" className="inline-flex items-center gap-1.5 hover:text-link print:text-black">
               <MailIcon className="h-4 w-4 print:hidden" />
-              ggriffith288@gmail.com
+              gavingriffith212@gmail.com
             </a>
             <span aria-label="phone number">{phoneDisplay}</span>
             <a
