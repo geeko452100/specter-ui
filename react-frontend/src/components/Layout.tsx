@@ -6,21 +6,16 @@ type NavLinkItem = {
   to: string
   label: string
   end?: boolean
-  external?: boolean
 }
 
 const links: NavLinkItem[] = [
-  { to: '/', label: 'Home', end: true },
+  { to: '/home', label: 'Home', end: true },
   { to: '/work', label: 'Work' },
   { to: '/about', label: 'About' },
   { to: '/resume', label: 'Resume' },
-  { to: 'https://dashboard.specterui.dev', label: 'Dashboard', external: true },
+  { to: '/dashboard', label: 'Dashboard' },
   { to: '/contact', label: 'Contact' },
 ]
-
-// dashboard.specterui.dev is a separate custom domain (see App.tsx), so its
-// nav item can't rely on React Router's isActive — check the hostname instead.
-const isDashboardHost = window.location.hostname.startsWith('dashboard.')
 
 function Layout() {
   return (
@@ -36,48 +31,30 @@ function Layout() {
           </NavLink>
           <div className="flex items-center gap-4">
             <ul className="flex items-center gap-1 text-sm">
-              {links.map(({ to, label, end, external }) =>
-                external ? (
-                  <li key={to}>
-                    <a
-                      href={to}
-                      className={`relative inline-block px-3 py-2 tracking-wide uppercase transition-all duration-300 hover:scale-110 ${
-                        isDashboardHost ? 'text-bone' : 'text-dust hover:text-smoke'
-                      }`}
-                    >
-                      {label}
-                      <span
-                        className={`absolute inset-x-3 -bottom-[1px] h-px bg-accent transition-opacity duration-300 ${
-                          isDashboardHost ? 'opacity-100' : 'opacity-0'
-                        }`}
-                      />
-                    </a>
-                  </li>
-                ) : (
-                  <li key={to}>
-                    <NavLink
-                      to={to}
-                      end={end}
-                      className={({ isActive }) =>
-                        `relative inline-block px-3 py-2 tracking-wide uppercase transition-all duration-300 hover:scale-110 ${
-                          isActive ? 'text-bone' : 'text-dust hover:text-smoke'
-                        }`
-                      }
-                    >
-                      {({ isActive }) => (
-                        <>
-                          {label}
-                          <span
-                            className={`absolute inset-x-3 -bottom-[1px] h-px bg-accent transition-opacity duration-300 ${
-                              isActive ? 'opacity-100' : 'opacity-0'
-                            }`}
-                          />
-                        </>
-                      )}
-                    </NavLink>
-                  </li>
-                ),
-              )}
+              {links.map(({ to, label, end }) => (
+                <li key={to}>
+                  <NavLink
+                    to={to}
+                    end={end}
+                    className={({ isActive }) =>
+                      `relative inline-block px-3 py-2 tracking-wide uppercase transition-all duration-300 hover:scale-110 ${
+                        isActive ? 'text-bone' : 'text-dust hover:text-smoke'
+                      }`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        {label}
+                        <span
+                          className={`absolute inset-x-3 -bottom-[1px] h-px bg-accent transition-opacity duration-300 ${
+                            isActive ? 'opacity-100' : 'opacity-0'
+                          }`}
+                        />
+                      </>
+                    )}
+                  </NavLink>
+                </li>
+              ))}
             </ul>
             <ThemeToggle />
           </div>

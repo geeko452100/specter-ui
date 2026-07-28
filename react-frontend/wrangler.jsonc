@@ -8,9 +8,6 @@
   },
   "routes": [
     { "pattern": "specterui.dev", "custom_domain": true },
-    { "pattern": "www.specterui.dev", "custom_domain": true },
-    // Same Worker/SPA build — App.tsx renders Dashboard at "/" for this
-    // hostname instead of Home. See App.tsx's isDashboardHost check.
-    { "pattern": "dashboard.specterui.dev", "custom_domain": true }
+    { "pattern": "www.specterui.dev", "custom_domain": true }
   ]
 }

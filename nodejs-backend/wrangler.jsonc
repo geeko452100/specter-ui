@@ -29,7 +29,7 @@
     // split/applied. Without this, CORS is off and cross-origin browser
     // requests from the frontend (Contact form, guest resume upload) fail
     // with a NetworkError even though the API itself works fine.
-    "CORS_ORIGIN": "https://specterui.dev,https://www.specterui.dev,https://dashboard.specterui.dev"
+    "CORS_ORIGIN": "https://specterui.dev,https://www.specterui.dev"
   },
   // Single hostname for everything — the frontend's VITE_API_BASE_URL
   // points here for both /guest/match (job dashboard) and /contact.

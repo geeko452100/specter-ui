@@ -23,7 +23,7 @@ const featured = [
   {
     title: 'Job Dashboard',
     year: '2026',
-    url: 'https://dashboard.specterui.dev',
+    url: 'https://specterui.dev/dashboard',
     tags: ['Python Web Scraping', 'TF-IDF Matching', 'Cloudflare Workers API', 'React Dashboard', 'Resume Matching'],
     blurb:
       'A full-stack job-search pipeline that crawls postings from multiple boards, ranks every one by fit against a resume using TF-IDF + cosine similarity, and serves results live — try it yourself by uploading your own resume.',
