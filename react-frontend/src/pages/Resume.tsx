@@ -1,4 +1,5 @@
 import { GithubIcon, LinkedInIcon, MailIcon } from '../components/icons'
+import { useSeo } from '../hooks/useSeo'
 
 // Phone digits are assembled from char codes rather than written as a
 // literal string, so the number never appears as searchable plain text in
@@ -43,6 +44,13 @@ const projects = [
 ]
 
 function Resume() {
+  useSeo({
+    title: 'Resume',
+    description:
+      "Gavin Griffith's resume — full-stack development experience across React, Next.js, FastAPI, Node.js, PostgreSQL, and Cloudflare Workers.",
+    path: '/resume',
+  })
+
   return (
     <section className="mx-auto max-w-3xl px-6 py-24 print:max-w-none print:px-0 print:py-0">
       <div className="flex items-start justify-between gap-6 print:hidden">

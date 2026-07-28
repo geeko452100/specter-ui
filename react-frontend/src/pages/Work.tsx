@@ -1,3 +1,5 @@
+import { useSeo } from '../hooks/useSeo'
+
 const projects = [
   {
     title: 'Full-Stack Music Streaming System',
@@ -26,6 +28,13 @@ const projects = [
 ]
 
 function Work() {
+  useSeo({
+    title: 'Selected Work',
+    description:
+      'Full-stack projects built and shipped — React and TypeScript frontends, FastAPI/Node.js backends, RBAC systems, and a TF-IDF job-matching pipeline.',
+    path: '/work',
+  })
+
   return (
     <section className="mx-auto max-w-5xl px-6 py-24">
       <p className="text-xs tracking-[0.4em] text-accent uppercase">selected work</p>
@@ -33,8 +42,8 @@ function Work() {
         Things I've brought to life
       </h1>
       <p className="mt-4 max-w-xl text-smoke">
-        Front-end fundamentals, built and shipped — API integration, state
-        management, and forms that hold up under real input. Small in scope,
+        Full-stack systems, built and shipped end to end — frontends, APIs,
+        databases, and the infrastructure connecting them. Small in scope,
         solid in execution.
       </p>
 

@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState, type FormEvent } from 'react'
+import { useSeo } from '../hooks/useSeo'
 
 interface JobPosting {
   source: string
@@ -24,6 +25,13 @@ type LoadState =
   | { status: 'ready'; postings: JobPosting[] }
 
 function Dashboard() {
+  useSeo({
+    title: 'Job Dashboard',
+    description:
+      'A live job-search dashboard that crawls postings from multiple boards and ranks them by fit against your resume using TF-IDF + cosine similarity.',
+    path: '/dashboard',
+  })
+
   const [state, setState] = useState<LoadState>({ status: 'idle' })
   const [remoteOnly, setRemoteOnly] = useState(false)
   const [minScore, setMinScore] = useState(0)

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { GithubIcon } from '../components/icons'
+import { useSeo } from '../hooks/useSeo'
 
 const featured = [
   {
@@ -32,6 +33,13 @@ const featured = [
 ]
 
 function Home() {
+  useSeo({
+    title: 'Full-Stack Developer Portfolio',
+    description:
+      "Gavin Griffith's full-stack developer portfolio — React and TypeScript frontends, Python and Node.js backends, and the Cloudflare/Postgres infrastructure tying them together.",
+    path: '/',
+  })
+
   return (
     <>
       <section className="mx-auto flex max-w-5xl flex-col items-center gap-6 px-6 pt-28 pb-24 text-center sm:pt-36 sm:pb-32">
@@ -45,9 +53,10 @@ function Home() {
           made to hold up.
         </h1>
         <p className="max-w-xl text-base text-smoke sm:text-lg">
-          I'm Gavin — a frontend developer who builds interfaces with real
-          attention to detail: clean state management, honest loading and
-          error states, and code that's easy to hand off.
+          I'm Gavin — a full-stack developer who builds complete systems:
+          React frontends with real attention to detail, backends and APIs
+          that hold up under real use, and the infrastructure to ship and
+          run it all.
         </p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-4">
           <Link

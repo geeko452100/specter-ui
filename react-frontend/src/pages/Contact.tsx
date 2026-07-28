@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { GithubIcon, LinkedInIcon, MailIcon } from '../components/icons'
+import { useSeo } from '../hooks/useSeo'
 
 const socials = [
   { label: 'Email', href: 'mailto:gavingriffith212@gmail.com', Icon: MailIcon },
@@ -12,6 +13,12 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string | undefined
 type SubmitState = { status: 'idle' | 'sending' | 'sent' } | { status: 'error'; message: string }
 
 function Contact() {
+  useSeo({
+    title: 'Contact',
+    description: "Get in touch with Gavin Griffith, a full-stack developer available for work.",
+    path: '/contact',
+  })
+
   const [submit, setSubmit] = useState<SubmitState>({ status: 'idle' })
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
