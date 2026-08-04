@@ -7,7 +7,7 @@ import Resume from './pages/Resume'
 import Contact from './pages/Contact'
 import Dashboard from './pages/Dashboard'
 import NotFound from './pages/NotFound'
-import Prairie from './pages/Prairie'
+import PrairieWebStudio from './pages/PrairieWebStudio'
 
 function App() {
   return (
