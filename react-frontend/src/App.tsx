@@ -19,7 +19,7 @@ function App() {
         <Route path="resume" element={<Resume />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="contact" element={<Contact />} />
-        <Route path="prairie" element={<Prairie />} />
+        <Route path="prairie" element={<PrairieWebStudio />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
