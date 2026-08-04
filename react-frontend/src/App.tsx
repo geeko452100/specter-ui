@@ -7,7 +7,7 @@ import Resume from './pages/Resume'
 import Contact from './pages/Contact'
 import Dashboard from './pages/Dashboard'
 import NotFound from './pages/NotFound'
-import PrairieWebStudio from './pages/PrairieWebStudio'
+import Prairie from './pages/Prairie'
 
 function App() {
   return (
@@ -19,7 +19,7 @@ function App() {
         <Route path="resume" element={<Resume />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="contact" element={<Contact />} />
-        <Route path="prairie" element={<PrairieWebStudio />} />
+        <Route path="'prairie web studio'" element={<Prairie />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

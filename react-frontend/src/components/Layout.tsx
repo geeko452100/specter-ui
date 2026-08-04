@@ -16,7 +16,7 @@ const links: NavLinkItem[] = [
   { to: '/resume', label: 'Resume' },
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/contact', label: 'Contact' },
-  { to: '/prairie', label: 'PrairieWebStudio' },
+  { to: '/prairie', label: "Prairie Web Studio" },
 ]
 
 function Layout() {
