@@ -18,12 +18,12 @@ const projects = [
       'Role-based access control for package tracking and support ticketing — permission-gated data access and a dedicated admin view for managing roles in real time.',
   },
   {
-    title: 'Job Dashboard',
+    title: 'Opportunity Discovery Experience',
     year: '2026',
     url: 'https://specterui.dev/dashboard',
-    tags: ['Python Web Scraping', 'TF-IDF Matching', 'Cloudflare Workers API', 'React Dashboard', 'Resume Matching'],
+    tags: ['Python Ingestion', 'TF-IDF Matching', 'Cloudflare API', 'React Experience', 'Client-Facing Demo'],
     blurb:
-      'A full-stack job-search pipeline that crawls postings from multiple boards, ranks every one by fit against a resume using TF-IDF + cosine similarity, and serves results live — try it yourself by uploading your own resume.',
+      'A polished product experience that surfaces relevant opportunities from public listings and ranks them by fit — built to feel thoughtful, fast, and client-ready.',
   },
 ]
 
@@ -31,7 +31,7 @@ function Work() {
   useSeo({
     title: 'Selected Work',
     description:
-      'Full-stack projects built and shipped — React and TypeScript frontends, FastAPI/Node.js backends, RBAC systems, and a TF-IDF job-matching pipeline.',
+      'Full-stack projects built and shipped — polished web products, dependable backends, and thoughtful interfaces for clients and teams.',
     path: '/work',
   })
 
@@ -39,12 +39,12 @@ function Work() {
     <section className="mx-auto max-w-5xl px-6 py-24">
       <p className="text-xs tracking-[0.4em] text-accent uppercase">selected work</p>
       <h1 className="mt-3 font-display text-3xl tracking-wide text-bone sm:text-4xl">
-        Things I've brought to life
+        Things I've built for people
       </h1>
       <p className="mt-4 max-w-xl text-smoke">
         Full-stack systems, built and shipped end to end — frontends, APIs,
-        databases, and the infrastructure connecting them. Small in scope,
-        solid in execution.
+        databases, and the infrastructure connecting them. Clear in experience,
+        dependable in practice.
       </p>
 
       <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

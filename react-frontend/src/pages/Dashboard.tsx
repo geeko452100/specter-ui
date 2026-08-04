@@ -26,9 +26,9 @@ type LoadState =
 
 function Dashboard() {
   useSeo({
-    title: 'Job Dashboard',
+    title: 'Product Demo',
     description:
-      'A live job-search dashboard that crawls postings from multiple boards and ranks them by fit against your resume using TF-IDF + cosine similarity.',
+      'A live resume-matching demo — upload a resume and see postings from multiple boards ranked by fit using TF-IDF + cosine similarity.',
     path: '/dashboard',
   })
 
@@ -85,15 +85,19 @@ function Dashboard() {
   if (state.status !== 'ready') {
     return (
       <section className="mx-auto max-w-md px-6 py-24">
-        <p className="text-xs tracking-[0.4em] text-accent uppercase">job dashboard</p>
-        <h1 className="mt-3 font-display text-3xl tracking-wide text-bone sm:text-4xl">Try your resume</h1>
+        <p className="text-xs tracking-[0.4em] text-accent uppercase">product demo</p>
+        <h1 className="mt-3 font-display text-3xl tracking-wide text-bone sm:text-4xl">Try the experience</h1>
         <p className="mt-4 text-smoke">
-          Postings pulled by python-crawler from multiple job boards, ranked against your resume by
-          keyword overlap, computed on the fly. The file is never stored — it's read, scored, and
-          discarded.
+          Upload a resume (PDF or plain text) and watch it get matched live against real postings,
+          ranked by fit with the same TF-IDF pipeline running behind this site. The file is never
+          stored — it's read, scored, and discarded.
         </p>
         <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+          <label htmlFor="resume" className="block text-xs tracking-widest text-dust uppercase">
+            Resume (PDF or text)
+          </label>
           <input
+            id="resume"
             ref={fileInput}
             type="file"
             accept=".txt,.pdf,text/plain,application/pdf"
@@ -106,7 +110,7 @@ function Dashboard() {
             disabled={state.status === 'loading'}
             className="rounded-sm border border-accent/40 bg-accent-dim px-6 py-3 text-sm tracking-widest text-bone uppercase transition-colors duration-300 hover:border-accent hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {state.status === 'loading' ? 'Matching…' : 'Find my matches'}
+            {state.status === 'loading' ? 'Matching…' : 'Run the demo'}
           </button>
         </form>
       </section>
@@ -118,7 +122,7 @@ function Dashboard() {
       <div className="flex items-baseline justify-between">
         <div>
           <p className="text-xs tracking-[0.4em] text-accent uppercase">guest</p>
-          <h1 className="mt-3 font-display text-3xl tracking-wide text-bone sm:text-4xl">Job dashboard</h1>
+          <h1 className="mt-3 font-display text-3xl tracking-wide text-bone sm:text-4xl">Opportunity discovery demo</h1>
         </div>
         <button
           type="button"
@@ -129,8 +133,8 @@ function Dashboard() {
         </button>
       </div>
       <p className="mt-4 max-w-xl text-smoke">
-        Postings pulled by python-crawler, ranked by keyword overlap against the resume you uploaded —
-        best fit first.
+        The postings that best match your resume are surfaced first, ranked by fit — a clean
+        interface built for clarity and client-ready polish.
       </p>
 
       <div className="mt-10 flex flex-wrap items-center gap-6">

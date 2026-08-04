@@ -15,7 +15,7 @@ function About() {
   useSeo({
     title: 'About',
     description:
-      'Gavin Griffith is a full-stack developer working across React/TypeScript frontends, Python/Node.js backends, PostgreSQL, Docker, and Cloudflare Workers.',
+      'Gavin Griffith is a full-stack developer working across React/TypeScript frontends, Python/Node.js backends, PostgreSQL, Docker, and Cloudflare Workers — open to full-time roles and client work.',
     path: '/about',
   })
 
@@ -28,9 +28,9 @@ function About() {
 
       <div className="mt-8 space-y-5 text-smoke">
         <p>
-          I'm Gavin, a full-stack developer early in my career and looking
-          for my first full-time role. I taught myself the fundamentals the
-          slow way — building things until the concepts stopped being
+          I'm Gavin, a full-stack developer — open to full-time roles and
+          available for client projects. I taught myself the fundamentals
+          the slow way — building things until the concepts stopped being
           abstract — and I'm still doing that, on purpose, from the database
           up through the interface.
         </p>
@@ -42,11 +42,11 @@ function About() {
           things, held carefully, at every layer.
         </p>
         <p>
-          I don't have a decade behind me, but I read code closely, I finish
-          what I start, and I'd rather ship something small and solid —
-          frontend, backend, and the infrastructure in between — than
-          something big and half-working. Most of what's on this site is
-          proof of that, not a claim about it.
+          I'm early in my career, but I read code closely, I finish what I
+          start, and I'd rather ship something small and solid — frontend,
+          backend, and the infrastructure in between — than something big
+          and half-working. Most of what's on this site is proof of that,
+          not a claim about it.
         </p>
       </div>
 

@@ -22,12 +22,12 @@ const featured = [
     github: 'https://github.com/geeko452100/rbac-package.git'
   },
   {
-    title: 'Job Dashboard',
+    title: 'Opportunity Discovery Experience',
     year: '2026',
     url: 'https://specterui.dev/dashboard',
-    tags: ['Python Web Scraping', 'TF-IDF Matching', 'Cloudflare Workers API', 'React Dashboard', 'Resume Matching'],
+    tags: ['Python Ingestion', 'TF-IDF Matching', 'Cloudflare API', 'React Experience', 'Client-Facing Demo'],
     blurb:
-      'A full-stack job-search pipeline that crawls postings from multiple boards, ranks every one by fit against a resume using TF-IDF + cosine similarity, and serves results live — try it yourself by uploading your own resume.',
+      'A polished product experience that surfaces relevant opportunities from public listings and ranks them by fit — built to feel thoughtful, fast, and client-ready.',
     github:'https://github.com/geeko452100/specter-ui.git'
   },
 ]
@@ -36,7 +36,7 @@ function Home() {
   useSeo({
     title: 'Full-Stack Developer Portfolio',
     description:
-      "Gavin Griffith's full-stack developer portfolio — React and TypeScript frontends, Python and Node.js backends, and the Cloudflare/Postgres infrastructure tying them together.",
+      "Gavin Griffith's portfolio — polished React and TypeScript interfaces, dependable backends, and systems built for clients and teams.",
     path: '/',
   })
 
@@ -45,18 +45,17 @@ function Home() {
       <section className="mx-auto flex max-w-5xl flex-col items-center gap-6 px-6 pt-28 pb-24 text-center sm:pt-36 sm:pb-32">
         <p className="flex items-center gap-2 text-xs tracking-[0.4em] text-dust uppercase">
           <span className="animate-pulse-slow h-1.5 w-1.5 rounded-full bg-link" />
-          Available for work
+          Open to full-time roles &amp; client work
         </p>
         <h1 className="font-display text-4xl leading-tight tracking-wide text-bone sm:text-6xl">
-          Built with precision,
+          Built to ship,
           <br />
-          made to hold up.
+          shaped with care.
         </h1>
         <p className="max-w-xl text-base text-smoke sm:text-lg">
-          I'm Gavin — a full-stack developer who builds complete systems:
-          React frontends with real attention to detail, backends and APIs
-          that hold up under real use, and the infrastructure to ship and
-          run it all.
+          I'm Gavin — a full-stack developer who builds polished products:
+          React interfaces that feel effortless, APIs that stay dependable
+          under pressure, and systems that help teams ship with confidence.
         </p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-4">
           <Link
@@ -116,8 +115,7 @@ function Home() {
 
       <section className="border-t border-iron/60 px-6 py-20 text-center">
         <p className="mx-auto max-w-2xl font-display text-xl tracking-wide text-smoke italic">
-          "Most sites shout for attention. This one holds still — and lets
-          the weight of what's there do the talking."
+          "Most sites shout for attention. This one lets the work speak with calm confidence."
         </p>
       </section>
     </>

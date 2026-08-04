@@ -15,7 +15,7 @@ type SubmitState = { status: 'idle' | 'sending' | 'sent' } | { status: 'error'; 
 function Contact() {
   useSeo({
     title: 'Contact',
-    description: "Get in touch with Gavin Griffith, a full-stack developer available for work.",
+    description: "Get in touch with Gavin Griffith, a full-stack developer open to full-time roles and client work.",
     path: '/contact',
   })
 
@@ -66,7 +66,7 @@ function Contact() {
         Say what you came to say
       </h1>
       <p className="mt-4 text-smoke">
-        Have a project, a question, or feedback on the work? I read
+        Have a role, a project, a question, or feedback on the work? I read
         everything that comes through.
       </p>
 

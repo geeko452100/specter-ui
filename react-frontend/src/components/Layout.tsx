@@ -14,9 +14,9 @@ const links: NavLinkItem[] = [
   { to: '/work', label: 'Work' },
   { to: '/about', label: 'About' },
   { to: '/resume', label: 'Resume' },
-  { to: '/dashboard', label: 'Dashboard' },
+  { to: '/dashboard', label: 'Demo' },
   { to: '/contact', label: 'Contact' },
-  { to: 'https://prairiewebstudio.com', label: "Prairie Web Studio" },
+  { to: 'https://prairiewebstudio.com', label: "Static Sites" },
 ]
 
 function Layout() {

@@ -21,10 +21,10 @@ const skills = [
 
 const projects = [
   {
-    title: 'AI-Powered Job Tracker Dashboard',
+    title: 'Opportunity Discovery Experience',
     bullets: [
-      'Built a full-stack job-search pipeline — a polite, rate-limited Python crawler, a Node.js API, and a React dashboard — that scrapes, normalizes, and stores postings from multiple job boards.',
-      'Applied scikit-learn (TF-IDF + cosine similarity) to auto-rank every posting by fit against a skills profile, replacing manual triage.',
+      'Built a full-stack experience that ingests public postings, normalizes them, and presents the strongest matches in a clean, client-friendly interface.',
+      'Applied TF-IDF + cosine similarity to rank results by relevance automatically, making the experience feel focused and useful rather than cluttered.',
     ],
   },
   {
@@ -47,7 +47,7 @@ function Resume() {
   useSeo({
     title: 'Resume',
     description:
-      "Gavin Griffith's resume — full-stack development experience across React, Next.js, FastAPI, Node.js, PostgreSQL, and Cloudflare Workers.",
+      "Gavin Griffith's resume — full-stack development experience building polished products for clients, teams, and modern web experiences.",
     path: '/resume',
   })
 
@@ -57,7 +57,7 @@ function Resume() {
         <div>
           <p className="text-xs tracking-[0.4em] text-accent uppercase">resume</p>
           <h1 className="mt-3 font-display text-3xl tracking-wide text-bone sm:text-4xl">
-            One page, no fluff
+            Built for clients and collaborators
           </h1>
         </div>
         <a
